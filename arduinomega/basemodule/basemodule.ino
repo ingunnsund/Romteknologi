@@ -1,3 +1,6 @@
+
+// Eksempelkode for hvordan å styre motoren
+
 int i = 0; 
 unsigned long time = 0; 
 bool flag = HIGH; 
