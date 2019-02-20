@@ -5,14 +5,14 @@ int i = 0;
 unsigned long time = 0; 
 bool flag = HIGH; 
  
-void setup() { 
+void motor_setup() { 
   // put your setup code here, to run once: 
   Serial.begin(115200); 
   pinMode(10, OUTPUT); //PWM PIN 10  with white line 
   pinMode(11, OUTPUT);//direction control PIN 11 with blue line 
 } 
    
-void loop() { 
+void motor_loop_step() { 
   // put your main code here, to run repeatedly: 
   if (millis() - time > 5000)  { 
     flag = !flag; 
