@@ -26,18 +26,21 @@ SoftwareSerial bluetooth(BLUETOOTH_TX, BLUETOOTH_RX);
 
 // Setup for this module
 void ble_setup() {
-    // Start serial monitor at 9600 bps.
-    Serial.begin(9600);
-    
     // Start bluetooth serial at 9600 bps.
     bluetooth.begin(9600);
     
     // delay just in case bluetooth module needs time to "get ready".
     delay(1000);
 
+    // sets the module to Peripheral mode.
+    bluetooth.write("AT+ROLE0");
+
+    // sets auto connect on start. // Denne kan kanskje droppes
+    bluetooth.write("AT+IMME0"); // Denne kan kanskje droppes
+
     // rename device to xxxxxx
     bluetooth.write("AT+NAMEArduinoMEGA");
-    
+
     Serial.println("BLE setup complete");
 }
 

@@ -1,7 +1,11 @@
 
 // main-modul for logikk etc.
+// programmet kjøres herfra
 
 void setup() { 
+  // Start serial monitor at 9600 bps.
+  Serial.begin(9600);
+  
   ble_setup();
   motor_setup();
 } 

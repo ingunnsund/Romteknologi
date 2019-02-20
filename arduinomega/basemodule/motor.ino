@@ -6,8 +6,7 @@ unsigned long time = 0;
 bool flag = HIGH; 
  
 void motor_setup() { 
-  // put your setup code here, to run once: 
-  Serial.begin(115200); 
+  // put your setup code here, to run once:
   pinMode(10, OUTPUT); //PWM PIN 10  with white line 
   pinMode(11, OUTPUT);//direction control PIN 11 with blue line 
 } 
