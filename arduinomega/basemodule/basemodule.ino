@@ -2,24 +2,33 @@
 // main-modul for logikk etc.
 // programmet kjøres herfra
 
+uint8_t i = 0; 
+
 void setup() { 
   // Start serial monitor at 9600 bps.
-  Serial.begin(9600);
+  Serial.begin(115200);
   
-  ble_setup();
+  //ble_setup();
   motor_setup();
 } 
-   
+ 
 void loop() { 
-  // put your main code here, to run repeatedly: 
+   /*set_motor_rpm(i);
+   delay(200); 
+   Serial.print("Target rpm: "); 
+   Serial.print(i); 
+   Serial.print("Measured rpm: "); 
+   Serial.println(get_motor_rpm()); 
+   i++; 
+   delay(1000); */
 
+   Serial.println(get_motor_rpm());
 
   // Kontrollere motor
-  motor_loop_step();
+  //motor_loop_step();
 
 
   // Kommunisere med mobilen
-  ble_check();
+  //ble_check();
 
-  
 } 
