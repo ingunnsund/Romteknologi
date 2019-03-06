@@ -17,16 +17,20 @@
 #define G_RANGE_16 3
 
 #include <I2Cdev.h>
+#include <avr/sleep.h>
+#include <avr/power.h>
 MPU6050 accel1(ACCEL1_ADDR);  
 MPU6050 accel2(ACCEL2_ADDR); 
 MPU6050 accel3(ACCEL3_ADDR); 
 int16_t ax1, ay1, az1;  // define accel as ax,ay,az
 int16_t ax2, ay2, az2;  // define accel as ax,ay,az
 int16_t ax3, ay3, az3;  // define accel as ax,ay,az
+int16_t avg_x, avg_y, avg_z; 
 int16_t gx, gy, gz;  // define gyro as gx,gy,gz
 
 void setup() {
   Wire.begin();      // join I2C bus   
+  //Serial.begin(115200);    //  initialize serial communication
   Serial.begin(38400);    //  initialize serial communication
   Serial.println("Initializing I2C devices...");
   accel1.initialize();  
@@ -39,7 +43,9 @@ void setup() {
   Serial.println(accel2.testConnection() ? "Accel2 connection successful" : "Accel2 connection failed");
   Serial.println(accel3.testConnection() ? "Accel3 connection successful" : "Accel3 connection failed");
 
-  accel1.setFullScaleAccelRange(G_RANGE_16);
+
+  //TODO: different g-ranges for each accelerometer
+  accel1.setFullScaleAccelRange(G_RANGE_2);
   accel2.setFullScaleAccelRange(G_RANGE_4);
   accel3.setFullScaleAccelRange(G_RANGE_8);
 
@@ -62,10 +68,7 @@ void setup() {
  accel1.setSleepEnabled(true);
  accel2.setSleepEnabled(true);
  accel3.setSleepEnabled(true);
-  
  
-
-  //TODO: different g-ranges for each accelerometer
  
 
 }
@@ -92,11 +95,44 @@ void printgforce(float ax, float ay, float az, float counts_per_g ) {
     Serial.println(az); 
 }
 
-void get_average_g_force(int16_t* ax, int16_t* ay, int16_t* az) {
+void update_average_accel(int16_t* ax, int16_t* ay, int16_t* az) {
      accel1.getAcceleration(&ax1, &ay1, &az1); 
-   //accel2.getAcceleration(&ax2, &ay2, &az2); 
-   //accel3.getAcceleration(&ax3, &ay3, &az3); 
+     accel2.getAcceleration(&ax2, &ay2, &az2); 
+     accel3.getAcceleration(&ax3, &ay3, &az3); 
+     *ax = (ax1 + ax2 + ax3)/3; 
+     *ay = (ay1 + ay2 + ay3)/3; 
+     *az = (az1 + az2 + az3)/3; 
 }
+
+void enterSleep(void)
+{
+  //set_sleep_mode(SLEEP_MODE_IDLE);
+  
+  
+  sleep_enable();
+
+
+  /* Disable all of the unused peripherals. This will reduce power
+   * consumption further and, more importantly, some of these
+   * peripherals may generate interrupts that will wake our Arduino from
+   * sleep!
+   */
+  power_adc_disable();
+  power_spi_disable();
+  power_timer0_disable();
+  power_timer2_disable();
+  power_twi_disable();  
+
+  /* Now enter sleep mode. */
+  sleep_mode();
+  
+  /* The program will continue from here after the timer timeout*/
+  sleep_disable(); /* First thing to do is disable sleep. */
+  
+  /* Re-enable the peripherals. */
+  power_all_enable();
+}
+
  
 
 void loop() {
@@ -105,6 +141,13 @@ void loop() {
 
   accel1.setSleepEnabled(false); 
 
-  printgforce((float)ax1,(float)ay1,(float)az1, COUNTS_PER_G_16G); 
+  /*if(Serial.available()) {
+    Serial.write(Serial.read()); 
+  }*/
+ 
+  accel1.getAcceleration(&ax1, &ay1, &az1); 
+  printgforce((float)ax1,(float)ay1,(float)az1, COUNTS_PER_G_2G); 
+  
+  
    //printRaw(ax1, ay1, az1); 
 }
