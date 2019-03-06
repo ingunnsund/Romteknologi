@@ -3,11 +3,13 @@
 #define OUT_SPEED_PIN 4
 #include <math.h>
 
-int target_rpm = 0; 
-uint8_t current_pwm = 255; 
-bool motor_on = false; 
 
-double coeff[5] = {-0.00000012738151467905, 0.00003770107584763563, -0.004487951180960165, 0.08480623145829404, 151.38464072531409};
+int target_rpm = 0; 
+int current_pwm = 255; 
+bool motor_on = false; 
+float Ki = 0.1; 
+float Kp = 0.005; 
+int err_acc; 
 
 
 void set_motordir_fw(void) {
@@ -57,10 +59,18 @@ void motor_controller(void) {
     }
     Serial.print(" Current rpm: ");
     Serial.print(current_rpm); 
-    if (current_rpm < target_rpm) {
-        current_pwm--; 
-    }else if(current_rpm > target_rpm) {
-        current_pwm++; 
+    int error = target_rpm - current_rpm; 
+    err_acc += error; 
+
+    Serial.print(" Error: ");
+    Serial.print(error); 
+    Serial.print(" Err_acc: ");
+    Serial.print(err_acc); 
+    current_pwm = 255 - (int)(Kp * (float) error + Ki * (float)err_acc); 
+    if(current_pwm < 0) {
+      current_pwm = 0; 
+    } else if (current_pwm > 255) {
+      current_pwm = 255; 
     }
   } else {
      current_pwm = 255; 
