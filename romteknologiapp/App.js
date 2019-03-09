@@ -16,6 +16,7 @@ import {
   Dimensions,
   Button,
   Image,
+  Animated,
 } from 'react-native';
 import { BleManager } from 'react-native-ble-plx';
 import RadialGradient from 'react-native-radial-gradient';
@@ -23,6 +24,7 @@ import PlanetView from './Planet';
 import { stringToBytes, bytesToString } from 'convert-string';
 
 const windowSize = Dimensions.get('window');
+// TODO skru av liggende 
 
 /*
 const instructions = Platform.select({
@@ -98,6 +100,7 @@ export default class App extends Component {
 				device.connect()
 				.then((device) => {
 					console.log("Connected");
+					// TODO change bluetooth symbol
 
 					device.discoverAllServicesAndCharacteristics().then((result) => {
 						console.log(result);
@@ -127,14 +130,9 @@ export default class App extends Component {
 					/>
 				</View>
 				<View style={styles.container1}>
-					<RadialGradient 
-						colors={['white', '#122544']}
-						//stops={[0.1,0.4,0.3,0.75]}
-						center={[Dimensions.get('window').width / 2, Dimensions.get('window').width / 2]}
-						radius={1 /* 300 */}>
 					<ScrollView 
 						horizontal={true}
-						onMomentumScrollBegin={() => console.log("begin")}
+						onMomentumScrollEnd={() => console.log("end")}
 						pagingEnabled={true}>
 						
 						<PlanetView planet="sun" />
@@ -150,13 +148,72 @@ export default class App extends Component {
 						<PlanetView planet="pluto" />
 
 					</ScrollView>
-					</RadialGradient>
+					
+					<Arrow>
+					<View style={styles.arrow}>
+						<Image 
+							style={styles.arrow1}
+							source={require('romteknologiapp/images/left-arrow.png')}
+							/>
+					</View>
+					<View style={styles.arrowRight}>
+						<Image 
+							style={styles.arrow1}
+							source={require('romteknologiapp/images/right-arrow.png')}
+							/>
+					</View>
+					</Arrow >
 				</View>
+				
 			</View>
 			
 		);
 	}
 }
+
+let off = 1;
+class Arrow extends React.Component {
+	state = {
+	  fadeAnim: new Animated.Value(0.2),  
+	}
+  
+	componentDidMount() {
+		off *= -1;
+		this.runAnimation(0.6); 
+	}
+
+	runAnimation(end) {
+		
+		Animated.timing(                
+			this.state.fadeAnim, 
+			{
+			  toValue: end,  
+			  duration: 1000,
+			}
+		  ).start(() => {
+			
+			if(off === -1) {
+				off *= -1;
+				this.runAnimation(0.2)
+			} else {
+				off *= -1;
+				this.runAnimation(0.6)
+			}
+		  });    
+	}
+  
+	render() {
+	  let { fadeAnim } = this.state;
+  
+	  return (
+		<Animated.View                 // Special animatable View
+		  style={{/*...styles.arrow, */opacity: fadeAnim, position: 'absolute'}}
+		>
+		  {this.props.children}
+		</Animated.View>
+	  );
+	}
+  }
 
 const styles = StyleSheet.create({
 	container: {
@@ -174,6 +231,23 @@ const styles = StyleSheet.create({
 	bluetooth: {
 		width: 50,
 		height: 50,
-		tintColor: '#62af87',
+		tintColor: '#990000',
+		//tintColor: '#62af87',
 	},
+	arrow: {
+		position: 'absolute',
+		right: windowSize.width * 2/5,
+		
+	},
+	arrowRight: {
+		position: 'absolute',
+		left: windowSize.width * 2/5,
+	},
+	arrow1: {
+		width: windowSize.width * 2/20,
+		height: windowSize.width * 2/20, 
+		tintColor: '#FFFFFF',
+		// https://www.flaticon.com/free-icon/left-arrow_271220
+		// https://www.flaticon.com/free-icon/right-arrow_271228 
+	},	
 });

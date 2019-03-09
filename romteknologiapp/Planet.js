@@ -6,6 +6,9 @@ import {
     Dimensions,
     Image,
   } from 'react-native';
+import RadialGradient from 'react-native-radial-gradient';
+
+const windowSize = Dimensions.get('window');
 
 const planets = {
     sun: {
@@ -73,37 +76,53 @@ export default class PlanetView extends Component {
 
 		return (
 			<View style={styles.planetView}>
+            
 				<Text style={styles.planetText}>{name}</Text>
-				<Image
-					style={planetStyle}
-					source={url} 
-				/>
+                <RadialGradient 
+                    colors={['#86a8df', '#122544']}
+                    //stops={[0.1,0.4,0.3,0.75]}
+                    //center={[Dimensions.get('window').width / 3 , Dimensions.get('window').width / 2]}
+                    radius={windowSize.width * 3/10}>
+                    <View style={styles.planetContainer}>
+                        <Image
+                            style={planetStyle}
+                            source={url} 
+                        />
+                    </View>
+				
+                </RadialGradient>
 			</View>												
 		);
 	}
 }
 
 const styles = StyleSheet.create({
+    planetContainer: {
+        width: windowSize.width * 6/10,
+        height: windowSize.width * 6/10, 
+        justifyContent: 'center',
+    	alignItems: 'center',
+    },
     planetText: {
 		textAlign: 'center',
-		fontSize: Dimensions.get('window').width * 1/20,
+		fontSize: windowSize.width * 1/20,
 		color: '#FFFFFF',
 		marginBottom: 5,
 	},
 	planets: {
-		width: Dimensions.get('window').width * 2/5,
-		height: Dimensions.get('window').width * 2/5, 
+		width: windowSize.width * 2/5,
+		height: windowSize.width * 2/5, 
 	},
 	planetSaturn: {
-		width: Dimensions.get('window').width * 3/5,
-		height: Dimensions.get('window').width * 3/5, 
+		width: windowSize.width * 3/5,
+		height: windowSize.width * 3/5, 
 	},
 	planetSun: {
-		width: Dimensions.get('window').width * 5/10,
-		height: Dimensions.get('window').width * 5/10, 
+		width: windowSize.width * 5/10,
+		height: windowSize.width * 5/10, 
     },
     planetView: {
-		width: Dimensions.get('window').width,
+		width: windowSize.width,
 		justifyContent: 'center',
     	alignItems: 'center',
     },
