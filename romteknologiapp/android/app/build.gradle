@@ -134,6 +134,7 @@ android {
 }
 
 dependencies {
+    implementation project(':react-native-radial-gradient')
     implementation project(':react-native-ble-plx')
     implementation project(':react-native-ble-manager')
     implementation fileTree(dir: "libs", include: ["*.jar"])
