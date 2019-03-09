@@ -120,7 +120,28 @@ export default class App extends Component {
 		});
 	}
 
+	handleScroll(event) {
+		//console.log(windowSize.width*10);
+		//8448
+		//7680
+		//console.log(event.nativeEvent.contentOffset.x);
+
+		
+		if(event.nativeEvent.contentOffset.x < windowSize.width/2) {
+			console.log('Sol');
+			styles.arrowLeft.opacity = 0;
+		} else if(event.nativeEvent.contentOffset.x > windowSize.width*9.5) {
+			console.log('Pluto');
+			styles.arrowRight.opacity = 0;
+		} else {
+			styles.arrowLeft.opacity = 1;
+			styles.arrowRight.opacity = 1;
+		}
+	}
+
 	render() {
+		
+
 		return (
 			<View style={styles.container}>
 				<View>
@@ -130,7 +151,7 @@ export default class App extends Component {
 					/>
 				</View>
 				<View style={styles.container1}>
-					<ScrollView 
+					<ScrollView onScroll={this.handleScroll}
 						horizontal={true}
 						onMomentumScrollEnd={() => console.log("end")}
 						pagingEnabled={true}>
@@ -150,7 +171,7 @@ export default class App extends Component {
 					</ScrollView>
 					
 					<Arrow>
-					<View style={styles.arrow}>
+					<View style={styles.arrowLeft}>
 						<Image 
 							style={styles.arrow1}
 							source={require('romteknologiapp/images/left-arrow.png')}
@@ -224,7 +245,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		justifyContent: 'center',
 		alignItems: 'center',
-	// backgroundColor: '#F5FCFF',
+		//backgroundColor: '#F5FCFF',
 		//backgroundColor: '#172e54',
 		//backgroundColor: '#122544',
 	},
@@ -234,7 +255,7 @@ const styles = StyleSheet.create({
 		tintColor: '#990000',
 		//tintColor: '#62af87',
 	},
-	arrow: {
+	arrowLeft: {
 		position: 'absolute',
 		right: windowSize.width * 2/5,
 		
@@ -242,6 +263,7 @@ const styles = StyleSheet.create({
 	arrowRight: {
 		position: 'absolute',
 		left: windowSize.width * 2/5,
+		opacity: 1,
 	},
 	arrow1: {
 		width: windowSize.width * 2/20,
