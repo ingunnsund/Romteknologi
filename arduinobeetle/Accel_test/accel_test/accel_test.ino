@@ -2,9 +2,9 @@
 #include <helper_3dmath.h>
 #include <MPU6050.h>
 
-#define ACCEL1_ADDR 0x68
-#define ACCEL2_ADDR 0x71
-#define ACCEL3_ADDR 0x72 
+#define ACCEL1_ADDR 0x70
+#define ACCEL2_ADDR 0x74
+#define ACCEL3_ADDR 0x77 
 
 #define COUNTS_PER_G_2G 16384
 #define COUNTS_PER_G_4G 8192
@@ -46,8 +46,8 @@ void setup() {
 
   //TODO: different g-ranges for each accelerometer
   accel1.setFullScaleAccelRange(G_RANGE_2);
-  accel2.setFullScaleAccelRange(G_RANGE_4);
-  accel3.setFullScaleAccelRange(G_RANGE_8);
+  accel2.setFullScaleAccelRange(G_RANGE_2);
+  accel3.setFullScaleAccelRange(G_RANGE_2);
 
   accel1.setStandbyXGyroEnabled(true);
   accel1.setStandbyYGyroEnabled(true);
