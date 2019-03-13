@@ -9,6 +9,7 @@ Instruction:
 2. The modules can be paired using the default pin 000000.
 */
 
+/*
 #include <SoftwareSerial.h>
 
 // The bluetooth tx and rx pins must be supported by software serial.
@@ -76,3 +77,5 @@ void ble_check() {
     Serial.println(str);
   }
 }
+
+*/
