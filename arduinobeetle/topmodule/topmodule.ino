@@ -123,7 +123,7 @@ void init_accel(void) {
 void setup() {
    /*Init serial communication*/ 
    Serial.begin(SERIAL_BAUD_R); 
-   Serial.setTimeout(1000);
+   Serial.setTimeout(5000);
 
    init_accel(); 
 
@@ -190,6 +190,7 @@ void loop() {
   //printRawAccel(ax3, ay3, az3, ACCEL3_PORT); 
   */ 
 
+/*
 
   if(!isPaired_counter) {
     Serial.println("ACK_REQ");  
@@ -209,12 +210,14 @@ void loop() {
       Serial.print("g:\t");
       Serial.println(get_avg_gforce());  
   }
-  
- 
-  
 
+  */
+  Serial.print("g:\t");
+  Serial.println(get_avg_gforce());  
+  delay(50); 
+  
   
   Serial.flush();
-  LowPower.powerDown(SLEEP_500MS, ADC_OFF, BOD_OFF); 
+  LowPower.powerDown(SLEEP_120MS, ADC_OFF, BOD_OFF); 
   
 }
