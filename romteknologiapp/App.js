@@ -22,6 +22,8 @@ import { BleManager } from 'react-native-ble-plx';
 import RadialGradient from 'react-native-radial-gradient';
 import PlanetView from './Planet';
 import { stringToBytes, bytesToString } from 'convert-string';
+import base64 from 'react-native-base64'
+
 
 const windowSize = Dimensions.get('window');
 // TODO skru av liggende 
@@ -40,25 +42,51 @@ export default class App extends Component {
 
 		this.manager = new BleManager();
 
+		this.state = {info: "", values: {}}
 
-		this.state = {
-			scanning:false,
-			peripherals: new Map(),
-			appState: ''
-		}
+		this.prefixUUID = "0000dfb"
+		this.suffixUUID = "-0000-1000-8000-00805f9b34fb"
 
+	}
+	serviceUUID() {
+		return this.prefixUUID + "0" + this.suffixUUID
+	}
+
+	notifyUUID(num) {
+		return this.prefixUUID + "1" + this.suffixUUID
+	}
+
+	writeUUID(num) {
+		return this.prefixUUID + "2" + this.suffixUUID
+	}	
+	info(message) {
+		this.setState({info: message})
+	}
+
+	error(message) {
+		this.setState({info: "ERROR: " + message})
+	}
+
+	updateValue(key, value) {
+		this.setState({values: {...this.state.values, [key]: value}})
+	}
+
+	componentWillMount() {
+		console.log("test1");
+		const subscription = this.manager.onStateChange((state) => {
+			console.log("test2");
+			console.log(state);
+			if (state === 'PoweredOn') {
+				console.log("Test");
+				this.scanAndConnect();
+				subscription.remove();
+			} else {
+				console.log("Bluetooth is powered off");
+			}
+		}, true);
 	}
 
 	componentDidMount() {
-		
-		/*const subscription = this.manager.onStateChange((state) => {
-		if (state === 'PoweredOn') {
-			this.scanAndConnect();
-			subscription.remove();
-		}
-		}, true);*/
-		
-
 
 		if (Platform.OS === 'android' && Platform.Version >= 23) {
 			PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION).then((result) => {
@@ -81,44 +109,50 @@ export default class App extends Component {
 	scanAndConnect() {
 		this.manager.startDeviceScan(null, null, (error, device) => {
 			if (error) {
-				// Handle error (scanning will be stopped automatically)
 				console.log(error);
 				return
 			}
 
-			// Check if it is a device you are looking for based on advertisement data
-			// or other criteria.
 			if (device.name === 'Bluno') {
 				// TODO && MAC address
-				
-				console.log("OK");
-				// Stop scanning as it's not necessary if you are scanning for one device.
+							
+				// Stop scanning 
 				this.manager.stopDeviceScan();
 
-				// Proceed with connection.
+				device.connect().then((device) => {
+					console.log("Connected to " + device.name);
+					// TODO change bluetooth symbol					
 
-				device.connect()
-				.then((device) => {
-					console.log("Connected");
-					// TODO change bluetooth symbol
-
-					device.discoverAllServicesAndCharacteristics().then((result) => {
-						console.log(result);
-					}).catch((error) => {
-						console.log(error);
-					});
+					return device.discoverAllServicesAndCharacteristics();
+				}).then((device) => {
+					this.info("Setting notifications")
+					return this.setupNotifications(device)
+				}).then(() => {
+					this.info("Listening...")
+				}, (error) => {
+					this.error(error.message)
 				})
-				.then((device) => {
-					console.log("conn");
-					// Do work on device with services and characteristics
-				})
-				.catch((error) => {
-					console.log(error);
-					// Handle errors
-				});
 			}
 		});
 	}
+
+	async setupNotifications(device) {
+		const service = this.serviceUUID()
+		const characteristicW = this.writeUUID()
+		const characteristicN = this.notifyUUID()
+	
+		const characteristic = await device.writeCharacteristicWithResponseForService(
+			service, characteristicW, "SGVp")
+	
+		device.monitorCharacteristicForService(service, characteristicN, (error, characteristic) => {
+			if (error) {
+			this.error(error.message)
+			return
+			}
+			this.updateValue(characteristic.uuid, base64.decode(characteristic.value))
+		})
+	}
+
 
 	handleScroll(event) {
 		//console.log(windowSize.width*10);
@@ -128,10 +162,10 @@ export default class App extends Component {
 
 		
 		if(event.nativeEvent.contentOffset.x < windowSize.width/2) {
-			console.log('Sol');
+			//console.log('Sol');
 			styles.arrowLeft.opacity = 0;
 		} else if(event.nativeEvent.contentOffset.x > windowSize.width*9.5) {
-			console.log('Pluto');
+			//console.log('Pluto');
 			styles.arrowRight.opacity = 0;
 		} else {
 			styles.arrowLeft.opacity = 1;
@@ -140,8 +174,6 @@ export default class App extends Component {
 	}
 
 	render() {
-		
-
 		return (
 			<View style={styles.container}>
 				<View>
@@ -153,7 +185,7 @@ export default class App extends Component {
 				<View style={styles.container1}>
 					<ScrollView onScroll={this.handleScroll}
 						horizontal={true}
-						onMomentumScrollEnd={() => console.log("end")}
+						onMomentumScrollEnd={() => console.log("end scroll")}
 						pagingEnabled={true}>
 						
 						<PlanetView planet="sun" />
@@ -184,6 +216,12 @@ export default class App extends Component {
 							/>
 					</View>
 					</Arrow >
+				</View>
+				<View>
+					<Text style={styles.text1}>{this.state.info}</Text>
+					<Text style={styles.text1}>
+						{(this.state.values[this.notifyUUID()] || "-")}
+					</Text>
 				</View>
 				
 			</View>
@@ -272,4 +310,7 @@ const styles = StyleSheet.create({
 		// https://www.flaticon.com/free-icon/left-arrow_271220
 		// https://www.flaticon.com/free-icon/right-arrow_271228 
 	},	
+	text1: {
+		color: '#FFFFFF',
+	},
 });

@@ -10,6 +10,7 @@
     "convert-string": "^0.1.0",
     "react": "16.6.3",
     "react-native": "0.58.5",
+    "react-native-base64": "0.0.2",
     "react-native-ble-manager": "^6.6.2",
     "react-native-ble-plx": "^1.0.3",
     "react-native-radial-gradient": "^1.0.5"
