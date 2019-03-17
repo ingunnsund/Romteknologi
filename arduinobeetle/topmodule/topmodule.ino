@@ -15,13 +15,15 @@
 #define ACCEL2_PORT 4
 #define ACCEL3_PORT 7
 
-#define SERIAL_BAUD_R 19200
+//#define SERIAL_BAUD_R 19200
+#define SERIAL_BAUD_R 115200
 
 #define G_RANGE_2 0
 #define G_RANGE_4 1
 #define G_RANGE_8 2
 #define G_RANGE_16 3
-#define G_RANGE G_RANGE_2
+#define G_RANGE G_RANGE_4
+
 
 #define COUNTS_PER_G_2G 16384
 #define COUNTS_PER_G_4G 8192
@@ -173,11 +175,13 @@ float get_avg_gforce(void) {
 
 void loop() {
 
-  /*
+  
   I2CMulti.selectPort(ACCEL1_PORT);
   accel.getAcceleration(&ax1, &ay1, &az1); 
-  //printgforce((float)ax1,(float)ay1,(float)az1, COUNTS_PER_G_2G, ACCEL1_PORT); 
+  printgforce((float)ax1,(float)ay1,(float)az1, ACCEL1_PORT); 
+  delay(100); 
 
+   /* 
   I2CMulti.selectPort(ACCEL2_PORT);
   accel.getAcceleration(&ax2, &ay2, &az2); 
   //printgforce((float)ax2,(float)ay2,(float)az2, COUNTS_PER_G_2G, ACCEL2_PORT); 
@@ -190,8 +194,7 @@ void loop() {
   //printRawAccel(ax3, ay3, az3, ACCEL3_PORT); 
   */ 
 
-/*
-
+  /*
   if(!isPaired_counter) {
     Serial.println("ACK_REQ");  
     uint8_t buf[8]; 
@@ -210,14 +213,17 @@ void loop() {
       Serial.print("g:\t");
       Serial.println(get_avg_gforce());  
   }
-
   */
-  Serial.print("g:\t");
+ 
+
+  
+  /*Serial.print("g:\t");
   Serial.println(get_avg_gforce());  
-  delay(50); 
+  */
   
   
-  Serial.flush();
-  LowPower.powerDown(SLEEP_120MS, ADC_OFF, BOD_OFF); 
+  
+  //Serial.flush();
+  //LowPower.powerDown(SLEEP_120MS, ADC_OFF, BOD_OFF); 
   
 }

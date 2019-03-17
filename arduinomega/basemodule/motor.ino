@@ -3,13 +3,33 @@
 #define OUT_SPEED_PIN 4
 #include <math.h>
 
+#define TO_SCALE_PWM 238 
+#define TO_SCALE_DELAY 10
+
 
 int target_rpm = 0; 
 int current_pwm = 255; 
 bool motor_on = false; 
-float Ki = 0.1; 
-float Kp = 0.005; 
-int err_acc; 
+float Ki = 0.01; 
+float Kp = 0.0005; 
+int err_acc = 0; 
+
+
+
+
+/* to scale for 1 g is 10 rpm which is too low for the encoder to read out -> 
+the motor controller won't work at this speed. This function decends to that speed manually */ 
+void rotate_to_scale(void) {
+     if(current_pwm >= TO_SCALE_PWM) {
+        set_motor_pwm(TO_SCALE_PWM);
+     } else {
+        for(int pwm = current_pwm+1; pwm <= TO_SCALE_PWM; pwm++) { 
+            set_motor_pwm(pwm); 
+            delay(TO_SCALE_DELAY); 
+        }
+     }
+}
+
 
 
 void set_motordir_fw(void) {
@@ -30,7 +50,7 @@ int get_motor_rpm(void){
   return 111111/i; //RPM = (60*1000000/(45*6*2*i))
 }
 
-void set_motor_pwm(double pwm) {
+void set_motor_pwm(uint8_t pwm) {
    analogWrite(OUT_SPEED_PIN,pwm); 
 } 
 
@@ -40,7 +60,7 @@ void set_rpm_target(uint8_t rpm) {
   }
 
   if(rpm < 27) {
-    motor_on = false; 
+    motor_on = false;   
     return; 
   }
   
@@ -55,7 +75,10 @@ void motor_controller(void) {
     int current_rpm = get_motor_rpm(); 
     if(current_rpm < 0) {
       current_pwm = 233; 
-      current_rpm = 27; 
+      current_rpm = 0; 
+    }
+    if(current_rpm > 255) {
+      current_rpm = 255; 
     }
     Serial.print(" Current rpm: ");
     Serial.print(current_rpm); 
@@ -69,19 +92,21 @@ void motor_controller(void) {
     current_pwm = 255 - (int)(Kp * (float) error + Ki * (float)err_acc); 
     if(current_pwm < 0) {
       current_pwm = 0; 
-    } else if (current_pwm > 255) {
-      current_pwm = 255; 
+    } else if (current_pwm > 230) {
+      current_pwm = 230; 
     }
   } else {
      current_pwm = 255; 
+     err_acc = 0; 
   }
   Serial.print(" Current pwm: ");
   Serial.println(current_pwm); 
-  set_motor_pwm(current_pwm);
+  set_motor_pwm((uint8_t)current_pwm);
 }
 
 void motor_setup(void) {
   pinMode(DIRECTION_PIN, OUTPUT); //to choose direction
   pinMode(OUT_SPEED_PIN, OUTPUT); //to choose speed
   set_motordir_fw(); 
+  set_rpm_target(0); 
 }
