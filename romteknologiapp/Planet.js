@@ -107,7 +107,8 @@ const styles = StyleSheet.create({
 		textAlign: 'center',
 		fontSize: windowSize.width * 1/20,
 		color: '#FFFFFF',
-		marginBottom: 5,
+        marginBottom: 5,
+        fontFamily: 'Orbitron-Regular',
 	},
 	planets: {
 		width: windowSize.width * 2/5,

@@ -24,5 +24,8 @@
   },
   "jest": {
     "preset": "react-native"
-  }
+  },
+  "rnpm": {
+    "assets": ["fonts/orbitron", "fonts/open-sans"]
+   }
 }

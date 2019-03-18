@@ -17,6 +17,8 @@ import {
   Button,
   Image,
   Animated,
+  Keyboard,
+  StatusBar,
 } from 'react-native';
 import { BleManager } from 'react-native-ble-plx';
 import RadialGradient from 'react-native-radial-gradient';
@@ -24,17 +26,14 @@ import PlanetView from './Planet';
 import { stringToBytes, bytesToString } from 'convert-string';
 import base64 from 'react-native-base64'
 
-
 const windowSize = Dimensions.get('window');
-// TODO skru av liggende 
 
 /*
-const instructions = Platform.select({
-	ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
-	android:
-	  'TEST::, (CTRL + M) Double tap R on your keyboard to reload,\n' +
-	  'Shake or press menu button for dev menu',
-  });*/
+Reload: adb shell input text "RR"
+Dev menu: adb shell input keyevent 82
+*/
+
+let device1; 
 
 export default class App extends Component {
 	constructor(){
@@ -42,23 +41,46 @@ export default class App extends Component {
 
 		this.manager = new BleManager();
 
-		this.state = {info: "", values: {}}
+		this.state = {
+			info: "", 
+			values: {},
+			rightOpacity: 1,
+			leftOpacity: 1,
+			device: "",
+		}
 
-		this.prefixUUID = "0000dfb"
+		this.handleScroll = this.handleScroll.bind(this);
+		this.scroll = null;
+		this.keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', this._keyboardDidShow.bind(this));
+	 
+
+		//this.prefixUUID = "0000dfb"
+		//this.suffixUUID = "-0000-1000-8000-00805f9b34fb"
+		//this.prefixUUID = "0000FFE"
+		//this.suffixUUID = "-0000-1000-8000-00805F9B34FB"
+		this.prefixUUID = "0000ffe"
 		this.suffixUUID = "-0000-1000-8000-00805f9b34fb"
+
+		// 00001801-0000-1000-8000-00805f9b34fb
+		// 00002a05-0000-1000-8000-00805f9b34fb
+		// 18:62:E4:3D:F0:73
 
 	}
 	serviceUUID() {
+		//return this.prefixUUID + "0" + this.suffixUUID
 		return this.prefixUUID + "0" + this.suffixUUID
 	}
 
 	notifyUUID(num) {
+		//return this.prefixUUID + "1" + this.suffixUUID
 		return this.prefixUUID + "1" + this.suffixUUID
 	}
 
 	writeUUID(num) {
-		return this.prefixUUID + "2" + this.suffixUUID
+		//return this.prefixUUID + "2" + this.suffixUUID
+		return this.prefixUUID + "1" + this.suffixUUID
 	}	
+
 	info(message) {
 		this.setState({info: message})
 	}
@@ -71,13 +93,17 @@ export default class App extends Component {
 		this.setState({values: {...this.state.values, [key]: value}})
 	}
 
+	componentWillUnmount () {
+		this.keyboardDidShowListener.remove();
+	  }
+	
+	  _keyboardDidShow() {
+		this.scroll.scrollToEnd();
+	  }
+
 	componentWillMount() {
-		console.log("test1");
 		const subscription = this.manager.onStateChange((state) => {
-			console.log("test2");
-			console.log(state);
 			if (state === 'PoweredOn') {
-				console.log("Test");
 				this.scanAndConnect();
 				subscription.remove();
 			} else {
@@ -113,9 +139,9 @@ export default class App extends Component {
 				return
 			}
 
-			if (device.name === 'Bluno') {
+			if (device.id === "18:62:E4:3D:F0:73") {//device.name === 'Bluno') {
 				// TODO && MAC address
-							
+
 				// Stop scanning 
 				this.manager.stopDeviceScan();
 
@@ -126,6 +152,7 @@ export default class App extends Component {
 					return device.discoverAllServicesAndCharacteristics();
 				}).then((device) => {
 					this.info("Setting notifications")
+					this.setState({device: device})
 					return this.setupNotifications(device)
 				}).then(() => {
 					this.info("Listening...")
@@ -138,44 +165,49 @@ export default class App extends Component {
 
 	async setupNotifications(device) {
 		const service = this.serviceUUID()
-		const characteristicW = this.writeUUID()
-		const characteristicN = this.notifyUUID()
-	
-		const characteristic = await device.writeCharacteristicWithResponseForService(
-			service, characteristicW, "SGVp")
+		const characteristicN = this.notifyUUID()		
 	
 		device.monitorCharacteristicForService(service, characteristicN, (error, characteristic) => {
 			if (error) {
-			this.error(error.message)
-			return
+				this.error(error.message)
+				return
 			}
 			this.updateValue(characteristic.uuid, base64.decode(characteristic.value))
+			console.log("Received: " + base64.decode(characteristic.value))
 		})
 	}
 
 
 	handleScroll(event) {
-		//console.log(windowSize.width*10);
-		//8448
-		//7680
-		//console.log(event.nativeEvent.contentOffset.x);
-
-		
 		if(event.nativeEvent.contentOffset.x < windowSize.width/2) {
-			//console.log('Sol');
-			styles.arrowLeft.opacity = 0;
+			this.setState({leftOpacity: 0});
 		} else if(event.nativeEvent.contentOffset.x > windowSize.width*9.5) {
-			//console.log('Pluto');
-			styles.arrowRight.opacity = 0;
+			this.setState({rightOpacity: 0});
 		} else {
-			styles.arrowLeft.opacity = 1;
-			styles.arrowRight.opacity = 1;
+			this.setState({leftOpacity: 0.5});
+			this.setState({rightOpacity: 0.5});
 		}
+	}
+
+	sendData(data) {
+		const service = this.serviceUUID()
+		const characteristicW = this.writeUUID()
+		
+		this.state.device.writeCharacteristicWithResponseForService(service, characteristicW, base64.encode(data)).then(ch => {
+			console.log("Sent: " + base64.decode(ch.value));
+
+		}).catch(error => {
+			console.log(error);
+		});
 	}
 
 	render() {
 		return (
 			<View style={styles.container}>
+				<StatusBar
+					backgroundColor="#0b172b"
+					barStyle="light-content"
+				/>
 				<View>
 					<Image 
 						style={styles.bluetooth}
@@ -185,8 +217,10 @@ export default class App extends Component {
 				<View style={styles.container1}>
 					<ScrollView onScroll={this.handleScroll}
 						horizontal={true}
-						onMomentumScrollEnd={() => console.log("end scroll")}
-						pagingEnabled={true}>
+						//onMomentumScrollEnd={() => console.log("end scroll")}
+						onMomentumScrollEnd={(scroll) => {this.scroll = scroll;}}
+						pagingEnabled={true}
+						>
 						
 						<PlanetView planet="sun" />
 						<PlanetView planet="mercury" />
@@ -203,13 +237,13 @@ export default class App extends Component {
 					</ScrollView>
 					
 					<Arrow>
-					<View style={styles.arrowLeft}>
+					<View style={[styles.arrowLeft, {opacity: this.state.leftOpacity}]}>
 						<Image 
 							style={styles.arrow1}
 							source={require('romteknologiapp/images/left-arrow.png')}
 							/>
 					</View>
-					<View style={styles.arrowRight}>
+					<View style={[styles.arrowRight, {opacity: this.state.rightOpacity}]}>
 						<Image 
 							style={styles.arrow1}
 							source={require('romteknologiapp/images/right-arrow.png')}
@@ -218,10 +252,11 @@ export default class App extends Component {
 					</Arrow >
 				</View>
 				<View>
-					<Text style={styles.text1}>{this.state.info}</Text>
-					<Text style={styles.text1}>
-						{(this.state.values[this.notifyUUID()] || "-")}
+					<Text style={styles.text}>{this.state.info}</Text>
+					<Text style={styles.text}>
+						{(this.state.values[this.notifyUUID()] || "Test")}
 					</Text>
+					<Button title="Send" onPress={() => this.sendData("Testdata")} />
 				</View>
 				
 			</View>
@@ -296,12 +331,12 @@ const styles = StyleSheet.create({
 	arrowLeft: {
 		position: 'absolute',
 		right: windowSize.width * 2/5,
-		
+		//opacity: App.state.leftOpacity,
 	},
 	arrowRight: {
 		position: 'absolute',
 		left: windowSize.width * 2/5,
-		opacity: 1,
+		//opacity: App.state.rightOpacity,
 	},
 	arrow1: {
 		width: windowSize.width * 2/20,
@@ -310,7 +345,8 @@ const styles = StyleSheet.create({
 		// https://www.flaticon.com/free-icon/left-arrow_271220
 		// https://www.flaticon.com/free-icon/right-arrow_271228 
 	},	
-	text1: {
+	text: {
 		color: '#FFFFFF',
-	},
+		fontFamily: 'OpenSans-Regular',
+	}
 });
