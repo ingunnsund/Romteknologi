@@ -20,6 +20,7 @@ import {
   Keyboard,
   StatusBar,
 } from 'react-native';
+import Slider from "react-native-slider";
 import { BleManager } from 'react-native-ble-plx';
 import RadialGradient from 'react-native-radial-gradient';
 import PlanetView from './Planet';
@@ -45,6 +46,7 @@ export default class App extends Component {
 			rightOpacity: 1,
 			leftOpacity: 1,
 			device: "",
+			content: windowSize.width*4, 
 		}
 
 		this.handleScroll = this.handleScroll.bind(this);
@@ -123,8 +125,10 @@ export default class App extends Component {
 				return
 			}
 
-			if (device.id === "18:62:E4:3D:F0:73") {//device.name === 'Bluno') {
-				// TODO && MAC address
+			if (device.id === "88:3F:4A:EF:85:1B") {
+				// App: 88:3F:4A:EF:85:1B
+				// Topp modul: 18:62:E4:3D:F0:73
+				// Bluno
 
 				// Stop scanning 
 				this.manager.stopDeviceScan();
@@ -183,6 +187,9 @@ export default class App extends Component {
 			this.setState({rightOpacity: 0.5});
 		}
 	}
+	scrolll() {
+		//this.refs.svref.scrollToEnd({animated: true});
+	}
 
 	render() {
 		return (
@@ -199,9 +206,14 @@ export default class App extends Component {
 				</View>
 				<View style={styles.container1}>
 					<ScrollView onScroll={this.handleScroll}
+    					ref={ ( ref ) => this.scrollView = ref }
 						horizontal={true}
-						//onMomentumScrollEnd={() => console.log("end scroll")}
-						onMomentumScrollEnd={(scroll) => {this.scroll = scroll;}}
+						/*onMomentumScrollEnd={() => {
+							
+							this.scrollView.scrollTo({x: windowSize.width*4, y: 0, animated: false})} 
+						}//.scrolll()}//(scroll) => {this.scroll = scroll;}}
+						*/
+						contentOffset={{x: this.state.content}}
 						pagingEnabled={true}
 						>
 						
@@ -235,6 +247,18 @@ export default class App extends Component {
 					</Arrow >
 				</View>
 				<View>
+					<Slider step={1/10}
+					//thumbTintColor='blue'
+					//style={{thumbTintColor='blue'}}
+					
+					thumbImage={require('romteknologiapp/images/earth.png')}
+					thumbStyle={styles.thumb}
+					minimumTrackTintColor='#5e9680'
+					maximumTrackTintColor='#5e9680'
+					style={styles.slider}
+            		thumbTintColor='#6addaf'
+					onValueChange={(value) =>
+					console.log(value)}></Slider>
 					<Text style={styles.text}>{this.state.info}</Text>
 					<Text style={styles.text}>
 						{(this.state.values[this.characteristicNUUID()] || "Test")}
@@ -314,12 +338,10 @@ const styles = StyleSheet.create({
 	arrowLeft: {
 		position: 'absolute',
 		right: windowSize.width * 2/5,
-		//opacity: App.state.leftOpacity,
 	},
 	arrowRight: {
 		position: 'absolute',
 		left: windowSize.width * 2/5,
-		//opacity: App.state.rightOpacity,
 	},
 	arrow1: {
 		width: windowSize.width * 2/20,
@@ -331,5 +353,16 @@ const styles = StyleSheet.create({
 	text: {
 		color: '#FFFFFF',
 		fontFamily: 'OpenSans-Regular',
+	},
+	thumb: {
+		width: 40,
+		height: 40,
+		//shadowColor: 'black',
+		//shadowOffset: {width: 0, height: 1},
+		//shadowOpacity: 0.5,
+		//shadowRadius: 1,
+	  },
+	slider: {
+		//color: '#6addaf'
 	}
 });
