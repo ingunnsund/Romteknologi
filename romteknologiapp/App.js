@@ -33,8 +33,6 @@ Reload: adb shell input text "RR"
 Dev menu: adb shell input keyevent 82
 */
 
-let device1; 
-
 export default class App extends Component {
 	constructor(){
 		super()
@@ -53,33 +51,21 @@ export default class App extends Component {
 		this.scroll = null;
 		this.keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', this._keyboardDidShow.bind(this));
 	 
-
-		//this.prefixUUID = "0000dfb"
-		//this.suffixUUID = "-0000-1000-8000-00805f9b34fb"
-		//this.prefixUUID = "0000FFE"
-		//this.suffixUUID = "-0000-1000-8000-00805F9B34FB"
 		this.prefixUUID = "0000ffe"
 		this.suffixUUID = "-0000-1000-8000-00805f9b34fb"
-
-		// 00001801-0000-1000-8000-00805f9b34fb
-		// 00002a05-0000-1000-8000-00805f9b34fb
-		// 18:62:E4:3D:F0:73
-
 	}
+
 	serviceUUID() {
-		//return this.prefixUUID + "0" + this.suffixUUID
 		return this.prefixUUID + "0" + this.suffixUUID
 	}
 
-	notifyUUID(num) {
-		//return this.prefixUUID + "1" + this.suffixUUID
+	characteristicWUUID(num) {
 		return this.prefixUUID + "1" + this.suffixUUID
 	}
 
-	writeUUID(num) {
-		//return this.prefixUUID + "2" + this.suffixUUID
+	characteristicNUUID(num) {
 		return this.prefixUUID + "1" + this.suffixUUID
-	}	
+	}
 
 	info(message) {
 		this.setState({info: message})
@@ -113,7 +99,6 @@ export default class App extends Component {
 	}
 
 	componentDidMount() {
-
 		if (Platform.OS === 'android' && Platform.Version >= 23) {
 			PermissionsAndroid.check(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION).then((result) => {
 				if (result) {
@@ -129,7 +114,6 @@ export default class App extends Component {
 				}
 			});
 		}
-
 	}
 
 	scanAndConnect() {
@@ -165,9 +149,9 @@ export default class App extends Component {
 
 	async setupNotifications(device) {
 		const service = this.serviceUUID()
-		const characteristicN = this.notifyUUID()		
+		const characteristic = this.characteristicNUUID()		
 	
-		device.monitorCharacteristicForService(service, characteristicN, (error, characteristic) => {
+		device.monitorCharacteristicForService(service, characteristic, (error, characteristic) => {
 			if (error) {
 				this.error(error.message)
 				return
@@ -177,6 +161,17 @@ export default class App extends Component {
 		})
 	}
 
+	sendData(data) {
+		const service = this.serviceUUID();
+		const characteristic = this.characteristicWUUID();
+		
+		this.state.device.writeCharacteristicWithResponseForService(service, characteristic, base64.encode(data)).then(ch => {
+			console.log("Sent: " + base64.decode(ch.value));
+
+		}).catch(error => {
+			console.log(error);
+		});
+	}
 
 	handleScroll(event) {
 		if(event.nativeEvent.contentOffset.x < windowSize.width/2) {
@@ -187,18 +182,6 @@ export default class App extends Component {
 			this.setState({leftOpacity: 0.5});
 			this.setState({rightOpacity: 0.5});
 		}
-	}
-
-	sendData(data) {
-		const service = this.serviceUUID()
-		const characteristicW = this.writeUUID()
-		
-		this.state.device.writeCharacteristicWithResponseForService(service, characteristicW, base64.encode(data)).then(ch => {
-			console.log("Sent: " + base64.decode(ch.value));
-
-		}).catch(error => {
-			console.log(error);
-		});
 	}
 
 	render() {
@@ -254,7 +237,7 @@ export default class App extends Component {
 				<View>
 					<Text style={styles.text}>{this.state.info}</Text>
 					<Text style={styles.text}>
-						{(this.state.values[this.notifyUUID()] || "Test")}
+						{(this.state.values[this.characteristicNUUID()] || "Test")}
 					</Text>
 					<Button title="Send" onPress={() => this.sendData("Testdata")} />
 				</View>
