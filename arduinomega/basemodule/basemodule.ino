@@ -23,19 +23,24 @@
 #define LED_GREEN_PIN 10 
 #define LED_BLUE_PIN 11 
 
+
 //Mega<->Serial Monitor 
-#define BAUD_RATE_SERIAL0 115200
-//Mega<->HM-10(topmodule) 
-#define BAUD_RATE_SERIAL1 115200
-//Mega<->HM-10(app)
-#define BAUD_RATE_SERIAL2 115200
+#define BAUD_RATE_SERIAL0 9600 // 115200
 
 #define SWITCH_PIN 20 //??
+
+#define STATUS_TOP_PIN 5
+#define STATUS_TOP_LED 6
+
+#define STATUS_APP_PIN 7
+#define STATUS_APP_LED 8
+
 
 //TODO: remove and replace with accel 1 g 
 #define MANUAL_MODE_1G 100 
 
 volatile bool app_connected = false; 
+int app_connected_int = 0;
 
 volatile bool topmodule_connected = false; 
 
@@ -47,48 +52,87 @@ volatile bool to_scale_mode = false;
 void setup() { 
   //For serial monitor thorugh usb
   Serial.begin(BAUD_RATE_SERIAL0);
+  delay(1000);
 
+  pinMode(STATUS_TOP_PIN, INPUT);
+  pinMode(STATUS_TOP_LED, OUTPUT);
 
-  /*Can be moved to a blutooth file */ 
+  digitalWrite(STATUS_TOP_LED, LOW);
+  
+  pinMode(STATUS_APP_PIN, INPUT);
+  pinMode(STATUS_APP_LED, OUTPUT);
+ 
 
-  //For HM-10 -> Top module interface 
-  Serial1.begin(BAUD_RATE_SERIAL1); 
-
-  //For HM-10 -> App interface
-  Serial2.begin(BAUD_RATE_SERIAL2); 
-
-
-  /*bluetooth setup */ 
-  //init_beetle_comm(); 
-
-  //init_app_comm(); 
-
+  bluetooth_init_top_comm();
+  bluetooth_init_app_comm(); 
+  
+  
   rgb_led_setup(); 
 
-  /*switch setup */  
+  //switch setup
    pinMode(SWITCH_PIN, INPUT_PULLUP); 
    attachInterrupt(digitalPinToInterrupt(SWITCH_PIN), handle_switch_event, CHANGE);
    handle_switch_event(); 
   
    motor_setup();
-
-} 
  
+
+  Serial.println("Setup complete");
+} 
+
+long count = 0;
+char res = ' ';
 void loop() { 
+
+  // What you receive on one bluetooth channel is sendt to the other
+  bluetooth_loop();
+
+  // These lines wont receive anything if the above line is commented in
+  //bluetooth_receive_top();
+  //bluetooth_receive_app();
+  
+
+  // Set status bit if there is a connection
+  if (not app_connected and digitalRead(STATUS_APP_PIN) == 1){
+    digitalWrite(STATUS_APP_LED, HIGH);
+    app_connected = true;
+    Serial.println("Setting led for app");
+  }
+  if (app_connected and digitalRead(STATUS_APP_PIN) == 0){
+    digitalWrite(STATUS_APP_LED, LOW);
+    app_connected = false;
+    Serial.println("Resetting led for app");
+  }
+
+  if (not topmodule_connected and digitalRead(STATUS_TOP_PIN) == 1){
+    digitalWrite(STATUS_TOP_LED, HIGH);
+    topmodule_connected = true;
+    Serial.println("Setting led for top module");
+  }
+  if (topmodule_connected and digitalRead(STATUS_TOP_PIN) == 0){
+    digitalWrite(STATUS_TOP_LED, LOW);
+    topmodule_connected = false;
+    Serial.println("Resetting led for top module");
+  }
+
 
   //possibly send some ack to the beetle that it should keep measuring accel if that is needed? 
 
   //send current g_force to app here
 
+  
+
+  // Commented out for bluetooth testing
+  /*
   if(manual_mode) {
     set_rpm_target(MANUAL_MODE_1G); 
     motor_controller(); 
 
     //TODO: can also set g target here instead if it is is connected to the topmodule 
-    /*
-     set_g_target(1); 
-     g_force_controller(); 
-     */
+    
+     // set_g_target(1); 
+     // g_force_controller(); 
+     
     
   } else {
     //read monitor input, should be replaced with bluetooth. 
@@ -109,7 +153,9 @@ void loop() {
       motor_controller(); 
     }
   }
-   
+*/
+  
+     
 }
 
 void handle_switch_event(void) {
