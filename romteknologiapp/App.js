@@ -19,6 +19,9 @@ import {
   Animated,
   Keyboard,
   StatusBar,
+  TextInput,
+  ViewPagerAndroid,
+  Picker,
 } from 'react-native';
 import Slider from "react-native-slider";
 import { BleManager } from 'react-native-ble-plx';
@@ -28,6 +31,7 @@ import { stringToBytes, bytesToString } from 'convert-string';
 import base64 from 'react-native-base64'
 
 const windowSize = Dimensions.get('window');
+
 
 /*
 Reload: adb shell input text "RR"
@@ -47,11 +51,15 @@ export default class App extends Component {
 			leftOpacity: 1,
 			device: "",
 			content: windowSize.width*4, 
+			text: '0.1',
+			bluetoothSymbol: '#990000',
+			page: 1,
+			sliderValue: 0.4
 		}
 
-		this.handleScroll = this.handleScroll.bind(this);
+		this.handleArrowScroll = this.handleArrowScroll.bind(this);
+		this.handlePlanetScroll = this.handlePlanetScroll.bind(this);
 		this.scroll = null;
-		this.keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', this._keyboardDidShow.bind(this));
 	 
 		this.prefixUUID = "0000ffe"
 		this.suffixUUID = "-0000-1000-8000-00805f9b34fb"
@@ -75,6 +83,7 @@ export default class App extends Component {
 
 	error(message) {
 		this.setState({info: "ERROR: " + message})
+		this.setState({bluetoothSymbol: '#990000'});
 	}
 
 	updateValue(key, value) {
@@ -84,15 +93,11 @@ export default class App extends Component {
 	componentWillUnmount () {
 		this.keyboardDidShowListener.remove();
 	  }
-	
-	  _keyboardDidShow() {
-		this.scroll.scrollToEnd();
-	  }
 
 	componentWillMount() {
 		const subscription = this.manager.onStateChange((state) => {
 			if (state === 'PoweredOn') {
-				this.scanAndConnect();
+				//this.scanAndConnect();
 				subscription.remove();
 			} else {
 				console.log("Bluetooth is powered off");
@@ -115,7 +120,7 @@ export default class App extends Component {
 					});
 				}
 			});
-		}
+		}		
 	}
 
 	scanAndConnect() {
@@ -135,7 +140,7 @@ export default class App extends Component {
 
 				device.connect().then((device) => {
 					console.log("Connected to " + device.name);
-					// TODO change bluetooth symbol					
+					this.setState({bluetoothSymbol: '#FFFFFF'});
 
 					return device.discoverAllServicesAndCharacteristics();
 				}).then((device) => {
@@ -177,21 +182,40 @@ export default class App extends Component {
 		});
 	}
 
-	handleScroll(event) {
-		if(event.nativeEvent.contentOffset.x < windowSize.width/2) {
+	handleArrowScroll(event) {
+		if(event === 0) {
 			this.setState({leftOpacity: 0});
-		} else if(event.nativeEvent.contentOffset.x > windowSize.width*9.5) {
+		} else if(event === 10) {
 			this.setState({rightOpacity: 0});
 		} else {
 			this.setState({leftOpacity: 0.5});
 			this.setState({rightOpacity: 0.5});
 		}
 	}
-	scrolll() {
-		//this.refs.svref.scrollToEnd({animated: true});
+
+	handlePlanetScroll(event) {
+		this.handleArrowScroll(event);
+		this.setState({sliderValue: Number((event/10).toFixed(1))});
 	}
 
+	handleSliderScroll(value) {
+		newPage = Number((value).toFixed(1))*10;
+		this.refs.planetScroll.setPage(newPage);
+		this.handleArrowScroll(newPage);
+	}
+	// TODO: merkur -> sol, slide til merkur -> sol. 
+
 	render() {
+		let values = [];
+		let max = 4;
+		let min = 0;
+
+		for(let i = min*10; i <= max*10; i++){
+
+			values.push(
+				<Picker.Item label={(i/10).toFixed(1).toString()} value={(i/10).toFixed(1).toString()} key={(i/10).toFixed(1).toString()} />
+			)
+		}
 		return (
 			<View style={styles.container}>
 				<StatusBar
@@ -200,37 +224,53 @@ export default class App extends Component {
 				/>
 				<View>
 					<Image 
-						style={styles.bluetooth}
+						style={[styles.bluetooth, {tintColor: this.state.bluetoothSymbol}]}
 						source={require('romteknologiapp/images/bluetooth.png')}
 					/>
 				</View>
 				<View style={styles.container1}>
-					<ScrollView onScroll={this.handleScroll}
-    					ref={ ( ref ) => this.scrollView = ref }
-						horizontal={true}
-						/*onMomentumScrollEnd={() => {
-							
-							this.scrollView.scrollTo({x: windowSize.width*4, y: 0, animated: false})} 
-						}//.scrolll()}//(scroll) => {this.scroll = scroll;}}
-						*/
-						contentOffset={{x: this.state.content}}
-						pagingEnabled={true}
-						>
-						
-						<PlanetView planet="sun" />
-						<PlanetView planet="mercury" />
-						<PlanetView planet="venus" />
-						<PlanetView planet="moon" />
-						<PlanetView planet="earth" />
-						<PlanetView planet="mars" />
-						<PlanetView planet="jupiter" />
-						<PlanetView planet="saturn" />
-						<PlanetView planet="uranus" />
-						<PlanetView planet="neptune" />
-						<PlanetView planet="pluto" />
+					<ViewPagerAndroid
+						ref="planetScroll"
+						style={styles.viewPager}
+						initialPage={4}
+						onPageSelected={(page) => {
+							this.handlePlanetScroll(page.nativeEvent.position)
+						}}>
+						<View key="1">
+							<PlanetView planet="sun" />
+						</View>
+						<View key="2">
+							<PlanetView planet="mercury" />
+						</View>
+						<View key="3">
+							<PlanetView planet="venus" />
+						</View>
+						<View key="4">
+							<PlanetView planet="moon" />
+						</View>
+						<View key="5">
+							<PlanetView planet="earth" />
+						</View>
+						<View key="6">
+							<PlanetView planet="mars" />
+						</View>
+						<View key="7">
+							<PlanetView planet="jupiter" />
+						</View>
+						<View key="8">
+							<PlanetView planet="saturn" />
+						</View>
+						<View key="9">
+							<PlanetView planet="uranus" />
+						</View>
+						<View key="10">
+							<PlanetView planet="neptune" />
+						</View>
+						<View key="11">
+							<PlanetView planet="pluto" />
+						</View>
+					</ViewPagerAndroid>
 
-					</ScrollView>
-					
 					<Arrow>
 					<View style={[styles.arrowLeft, {opacity: this.state.leftOpacity}]}>
 						<Image 
@@ -244,26 +284,39 @@ export default class App extends Component {
 							source={require('romteknologiapp/images/right-arrow.png')}
 							/>
 					</View>
-					</Arrow >
+					</Arrow >		
 				</View>
 				<View>
-					<Slider step={1/10}
-					//thumbTintColor='blue'
-					//style={{thumbTintColor='blue'}}
-					
-					thumbImage={require('romteknologiapp/images/earth.png')}
-					thumbStyle={styles.thumb}
-					minimumTrackTintColor='#5e9680'
-					maximumTrackTintColor='#5e9680'
-					style={styles.slider}
-            		thumbTintColor='#6addaf'
-					onValueChange={(value) =>
-					console.log(value)}></Slider>
+					<Slider 
+						step={1/10}
+						//thumbTintColor='blue'
+						//style={{thumbTintColor='blue'}}
+						thumbTouchSize={{width: 60, height: 60}}
+						thumbImage={require('romteknologiapp/images/earth.png')}
+						thumbStyle={styles.thumb}
+						ref="slider"
+						value={this.state.sliderValue}
+						minimumTrackTintColor='#bababa'
+						maximumTrackTintColor='#bababa'
+						style={styles.slider}
+						thumbTintColor='#FFFFFF'
+						onValueChange={(value) =>
+							this.handleSliderScroll(value)}>
+					</Slider>
 					<Text style={styles.text}>{this.state.info}</Text>
 					<Text style={styles.text}>
 						{(this.state.values[this.characteristicNUUID()] || "Test")}
 					</Text>
-					<Button title="Send" onPress={() => this.sendData("Testdata")} />
+					<Picker
+						selectedValue={this.state.language}
+						style={{height: 50, width: 100, backgroundColor: '#FFFFFF'}}
+						onValueChange={(itemValue, itemIndex) => {
+							this.setState({language: itemValue});
+							this.setState({text: itemValue});
+						}}>
+						{ values }
+					</Picker>
+					<Button title="Send" onPress={() => this.sendData(this.state.text)} />
 				</View>
 				
 			</View>
@@ -308,7 +361,7 @@ class Arrow extends React.Component {
   
 	  return (
 		<Animated.View                 // Special animatable View
-		  style={{/*...styles.arrow, */opacity: fadeAnim, position: 'absolute'}}
+		  style={{/*...styles.arrow, */opacity: fadeAnim, position: 'absolute', height: windowSize.width * 1/10 }}
 		>
 		  {this.props.children}
 		</Animated.View>
@@ -322,17 +375,15 @@ const styles = StyleSheet.create({
 		backgroundColor: '#122544',
 	},
 	container1: {
-		flex: 1,
+		flex: 0,
 		justifyContent: 'center',
 		alignItems: 'center',
+		height: windowSize.width * 8/10,
 		//backgroundColor: '#F5FCFF',
-		//backgroundColor: '#172e54',
-		//backgroundColor: '#122544',
 	},
 	bluetooth: {
 		width: 50,
 		height: 50,
-		tintColor: '#990000',
 		//tintColor: '#62af87',
 	},
 	arrowLeft: {
@@ -345,7 +396,7 @@ const styles = StyleSheet.create({
 	},
 	arrow1: {
 		width: windowSize.width * 2/20,
-		height: windowSize.width * 2/20, 
+		height: windowSize.height * 2/20, 
 		tintColor: '#FFFFFF',
 		// https://www.flaticon.com/free-icon/left-arrow_271220
 		// https://www.flaticon.com/free-icon/right-arrow_271228 
@@ -355,8 +406,8 @@ const styles = StyleSheet.create({
 		fontFamily: 'OpenSans-Regular',
 	},
 	thumb: {
-		width: 40,
-		height: 40,
+		width: 60,
+		height: 60,
 		//shadowColor: 'black',
 		//shadowOffset: {width: 0, height: 1},
 		//shadowOpacity: 0.5,
@@ -364,5 +415,18 @@ const styles = StyleSheet.create({
 	  },
 	slider: {
 		//color: '#6addaf'
-	}
+	},
+	input: {
+		backgroundColor: '#FFFFFF'
+	},
+	viewPager: {
+		flex: 1,
+		width: windowSize.width,
+		justifyContent: 'center',
+    	alignItems: 'center',
+	  },
+	  pageStyle: {
+		alignItems: 'center',
+		padding: 50,
+	  },
 });
