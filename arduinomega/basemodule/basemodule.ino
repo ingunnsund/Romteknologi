@@ -18,54 +18,28 @@
  * GREEN if it is connected to the top module (but not the app) and BLUE if it is connected to the app. 
  */
 
-
-#define LED_RED_PIN 9
-#define LED_GREEN_PIN 10 
-#define LED_BLUE_PIN 11 
-
+#define LED_RED_PIN 11
+#define LED_GREEN_PIN 12 
+#define LED_BLUE_PIN 13 
 
 //Mega<->Serial Monitor 
 #define BAUD_RATE_SERIAL0 9600 // 115200
 
-#define SWITCH_PIN 20 //??
-
-#define STATUS_TOP_PIN 5
-#define STATUS_TOP_LED 6
-
-#define STATUS_APP_PIN 7
-#define STATUS_APP_LED 8
-
+#define SWITCH_PIN 10 //?? oransje, (gul til jord)
 
 //TODO: remove and replace with accel 1 g 
 #define MANUAL_MODE_1G 100 
 
-volatile bool app_connected = false; 
-int app_connected_int = 0;
-
-volatile bool topmodule_connected = false; 
-
 volatile bool manual_mode; 
-
 volatile bool to_scale_mode = false;  
 
 
 void setup() { 
   //For serial monitor thorugh usb
   Serial.begin(BAUD_RATE_SERIAL0);
-  delay(1000);
+  delay(1000); 
 
-  pinMode(STATUS_TOP_PIN, INPUT);
-  pinMode(STATUS_TOP_LED, OUTPUT);
-
-  digitalWrite(STATUS_TOP_LED, LOW);
-  
-  pinMode(STATUS_APP_PIN, INPUT);
-  pinMode(STATUS_APP_LED, OUTPUT);
- 
-
-  bluetooth_init_top_comm();
-  bluetooth_init_app_comm(); 
-  
+  bt_init();
   
   rgb_led_setup(); 
 
@@ -76,45 +50,14 @@ void setup() {
   
    motor_setup();
  
-
   Serial.println("Setup complete");
 } 
 
-long count = 0;
-char res = ' ';
 void loop() { 
 
-  // What you receive on one bluetooth channel is sendt to the other
-  bluetooth_loop();
+  bt_controller();
 
-  // These lines wont receive anything if the above line is commented in
-  //bluetooth_receive_top();
-  //bluetooth_receive_app();
   
-
-  // Set status bit if there is a connection
-  if (not app_connected and digitalRead(STATUS_APP_PIN) == 1){
-    digitalWrite(STATUS_APP_LED, HIGH);
-    app_connected = true;
-    Serial.println("Setting led for app");
-  }
-  if (app_connected and digitalRead(STATUS_APP_PIN) == 0){
-    digitalWrite(STATUS_APP_LED, LOW);
-    app_connected = false;
-    Serial.println("Resetting led for app");
-  }
-
-  if (not topmodule_connected and digitalRead(STATUS_TOP_PIN) == 1){
-    digitalWrite(STATUS_TOP_LED, HIGH);
-    topmodule_connected = true;
-    Serial.println("Setting led for top module");
-  }
-  if (topmodule_connected and digitalRead(STATUS_TOP_PIN) == 0){
-    digitalWrite(STATUS_TOP_LED, LOW);
-    topmodule_connected = false;
-    Serial.println("Resetting led for top module");
-  }
-
 
   //possibly send some ack to the beetle that it should keep measuring accel if that is needed? 
 
@@ -153,8 +96,7 @@ void loop() {
       motor_controller(); 
     }
   }
-*/
-  
+  */
      
 }
 
@@ -165,9 +107,9 @@ void handle_switch_event(void) {
   } else {
      manual_mode = false; 
      to_scale_mode = false; 
-     if(app_connected) {
+     if(bt_is_app_connected()) {
         set_BLUE_LED(); 
-     } else if(topmodule_connected) {
+     } else if(bt_is_top_connected()) {
         set_GREEN_LED(); 
      } else {
         set_WHITE_LED(); 

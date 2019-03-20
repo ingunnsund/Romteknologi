@@ -1,5 +1,9 @@
 
+volatile bool app_connected = false;
+volatile bool top_connected = false; 
 
+float top_current_g = 0;
+float app_target_g = 0;
 
 //Mega<->HM-10(topmodule) 
 #define BAUD_RATE_SERIAL1 9600
@@ -9,6 +13,19 @@
 const int READ_TIME = 500; //ms
 
 unsigned long prevMillis;
+char c=' ';
+
+#define STATUS_TOP_PIN 5
+#define STATUS_TOP_LED 6
+
+#define STATUS_APP_PIN 7
+#define STATUS_APP_LED 8
+
+// ================================ //
+
+void wait_for_at_ok(){
+  delay(700);
+}
 
 void bluetooth_init_top_comm(){
     Serial.println("BLE setup for top module start");
@@ -17,22 +34,33 @@ void bluetooth_init_top_comm(){
     Serial1.begin(BAUD_RATE_SERIAL1);
     
     // delay just in case bluetooth module needs time to "get ready".
-    delay(1000);
+    wait_for_at_ok();
 
-    Serial1.write("AT+RESET");
-    delay(700);
-
-    // choose that state pin is LOW when not connected and HIGH when connected 
-    Serial1.write("AT+PIO11");
-    delay(700);
-  
+    // Wait for connection command before starting
+    Serial1.print("AT+IMME1" );
+    wait_for_at_ok();
+    
     // sets the module to Master mode.
-    Serial1.write("AT+ROLE0");
-    delay(700);
+    Serial1.print("AT+ROLE1");
+    wait_for_at_ok();
+
+    Serial1.print("AT+RESET");
+    wait_for_at_ok();
+        
+    // Connect to Beetle (mac: 0C:B2:B7:46:86:47)
+    Serial1.print("AT+CON0CB2B7468647");
+    wait_for_at_ok();
   
+    // choose that state pin is LOW when not connected and HIGH when connected 
+    Serial1.print("AT+PIO11");
+    wait_for_at_ok();
+
     // rename device
-    Serial1.write("AT+NAMEMegaToTop");
-    delay(700);
+    Serial1.print("AT+NAMEMegaToTop");
+    wait_for_at_ok();
+
+    Serial1.print("AT+START");
+    wait_for_at_ok();
   
     Serial.println("BLE setup for top module complete");
 }
@@ -44,46 +72,91 @@ void bluetooth_init_app_comm(){
     Serial2.begin(BAUD_RATE_SERIAL2);
     
     // delay just in case bluetooth module needs time to "get ready".
-    delay(1000);
+    wait_for_at_ok();
 
-    Serial2.write("AT+RESET");
-    delay(700);
+    Serial2.print("AT+RESET");
+    wait_for_at_ok();
 
     // choose that state pin is LOW when not connected and HIGH when connected 
-    Serial2.write("AT+PIO11");
-    delay(700);
+    Serial2.print("AT+PIO11");
+    wait_for_at_ok();
   
     // sets the module to Peripheral mode.
-    Serial2.write("AT+ROLE0");
-    delay(700);
+    Serial2.print("AT+ROLE0");
+    wait_for_at_ok();
 
     // rename device to
-    Serial2.write("AT+NAMEMegaToApp");
-    delay(700);
+    Serial2.print("AT+NAMESpaceBungalo");
+    wait_for_at_ok();
   
     Serial.println("BLE setup for app complete");
 }
 
-char c=' ';
-boolean NL = true;
+void send_to_app(float g){
+  char value[6];
+  dtostrf(g, 4, 2, value);
+  Serial2.write(value);
+}
 
+float receive_from_top(){
+  float val = top_current_g;
+  if (Serial1.available()){
+        val = Serial1.parseFloat();
+  }
+  return val;
+}
+
+float receive_from_app(){
+  float val = app_target_g;
+  if (Serial2.available()){
+        val = Serial2.parseFloat();
+  }
+  return val;
+}
+
+void reconnect(){
+  Serial1.print("AT+CONNL");
+  delay(1000);
+}
+
+bool check_connection_top(){
+  if (not top_connected and digitalRead(STATUS_TOP_PIN) == 1){
+    digitalWrite(STATUS_TOP_LED, HIGH);
+    top_connected = true;
+  }
+  if (top_connected and digitalRead(STATUS_TOP_PIN) == 0){
+    digitalWrite(STATUS_TOP_LED, LOW);
+    top_connected = false;
+  }
+  return top_connected;
+}
+
+bool check_connection_app(){
+  if (not app_connected and digitalRead(STATUS_APP_PIN) == 1){
+    digitalWrite(STATUS_APP_LED, HIGH);
+    app_connected = true;
+  }
+  if (top_connected and digitalRead(STATUS_APP_PIN) == 0){
+    digitalWrite(STATUS_APP_LED, LOW);
+    app_connected = false;
+  }
+  return app_connected;
+}
+
+boolean NL = true;
 void bluetooth_loop_app(){
   // Read from the Bluetooth module and send to the Arduino Serial Monitor
-    if (Serial2.available())
-    {
+    if (Serial2.available()){
         c = Serial2.read();
         Serial.write(c);
     }
  
- 
     // Read from the Serial Monitor and send to the Bluetooth module
-    if (Serial.available())
-    {
+    if (Serial.available()){
         c = Serial.read();
  
         // do not send line end characters to the HM-10
-        if (c!=10 & c!=13 ) 
-        {  
+        if (c!=10 & c!=13 ){  
              Serial2.write(c);
         }
  
@@ -95,50 +168,90 @@ void bluetooth_loop_app(){
     }
 }
 
-void bluetooth_loop(){
+void bluetooth_loop_top(){
   // Read from the Bluetooth module and send to the Arduino Serial Monitor
-    if (Serial1.available())
-    {
+    if (Serial1.available()){
         c = Serial1.read();
-        Serial2.write(c);
+        //top_current_g = Serial1.parseFloat();
+        Serial.write(c);
     }
  
  
     // Read from the Serial Monitor and send to the Bluetooth module
-    if (Serial2.available())
-    {
-        c = Serial2.read();
-        Serial1.write(c);
+    if (Serial.available()){
+        c = Serial.read();
+ 
+        // do not send line end characters to the HM-10
+        if (c!=10 & c!=13 ){  
+             Serial1.write(c);
+        }
+ 
+        // Echo the user input to the main window. 
+        // If there is a new line print the ">" character.
+        if (NL) { Serial.print("\r\n>");  NL = false; }
+        Serial.write(c);
+        if (c==10) { NL = true; }
     }
 }
 
+// ===== Public funksjoner ====== //
 
-char bluetooth_receive_top(){
-  c = ' ';
-  if (Serial1.available()){
-        c = Serial1.read();
-  }
-  return c;
-}
-
-char bluetooth_receive_app(){
-  c = ' ';
-  if (Serial2.available()){
-        c = Serial2.read();
-  }
-  return c;
-}
-
-void bluetooth_send_top(char *str){
-  //Serial.print("Sending to top: ");
-  //Serial.println(str);
+// Denne blir kalt ved setup
+void bt_init(){
   
-  Serial1.write(str);
+  pinMode(STATUS_TOP_PIN, INPUT);
+  pinMode(STATUS_TOP_LED, OUTPUT);
+
+  pinMode(STATUS_APP_PIN, INPUT);
+  pinMode(STATUS_APP_LED, OUTPUT);
+
+  digitalWrite(STATUS_TOP_LED, LOW);
+  digitalWrite(STATUS_APP_LED, LOW);
+  
+  bluetooth_init_top_comm();
+  bluetooth_init_app_comm();
 }
 
-void bluetooth_send_app(char *str){
-  //Serial.print("Sending to app: ");
-  //Serial.println(str);
+// Denne blir kalt regelmessig i loop
+void bt_controller(){
+
+  //bluetooth_loop_app();
+  //bluetooth_loop_top();
+
+
+  top_connected = check_connection_top();
+  app_connected = check_connection_app();
+
+  if (top_connected){
+    top_current_g = receive_from_top();
+    if (app_connected){
+      send_to_app(top_current_g);
+    }
+  }
+  else {
+    reconnect();
+  }
+
+  if (app_connected){
+    app_target_g = receive_from_app();
+    Serial.println(app_target_g);
+  }
   
-  Serial2.write(str);
+  delay(100);
+}
+
+bool bt_is_app_connected(){
+  return app_connected;
+}
+
+bool bt_is_top_connected(){
+  return top_connected;
+}
+
+float bt_get_top_current_g(){
+  return top_current_g;
+}
+
+float bt_get_app_target_g(){
+  return app_target_g;
 }

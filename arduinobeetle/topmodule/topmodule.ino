@@ -16,7 +16,8 @@
 #define ACCEL3_PORT 7
 
 //#define SERIAL_BAUD_R 19200
-#define SERIAL_BAUD_R 115200
+//#define SERIAL_BAUD_R 115200
+#define SERIAL_BAUD_R 9600
 
 #define G_RANGE_2 0
 #define G_RANGE_4 1
