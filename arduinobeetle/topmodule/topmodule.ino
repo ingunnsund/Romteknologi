@@ -15,8 +15,7 @@
 #define ACCEL2_PORT 4
 #define ACCEL3_PORT 7
 
-//#define SERIAL_BAUD_R 19200
-#define SERIAL_BAUD_R 115200
+#define SERIAL_BAUD_R 9600
 
 #define G_RANGE_2 0
 #define G_RANGE_4 1
@@ -30,7 +29,7 @@
 #define COUNTS_PER_G_8G 4096
 #define COUNTS_PER_G_16G 2048
 
-#define COUNTS_PER_G COUNTS_PER_G_2G
+#define COUNTS_PER_G COUNTS_PER_G_4G
 
 
 
@@ -176,9 +175,14 @@ float get_avg_gforce(void) {
 void loop() {
 
   
-  I2CMulti.selectPort(ACCEL1_PORT);
+  /*I2CMulti.selectPort(ACCEL1_PORT);
   accel.getAcceleration(&ax1, &ay1, &az1); 
   printgforce((float)ax1,(float)ay1,(float)az1, ACCEL1_PORT); 
+  delay(100); 
+  */ 
+
+  Serial.println("Hello from beetle"); 
+
   delay(100); 
 
    /* 

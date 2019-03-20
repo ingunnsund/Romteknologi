@@ -1,0 +1,1 @@
+copy folders to "libraries" folder in the "Arduino" folder. 
