@@ -5,6 +5,7 @@ import {
     View,
     Dimensions,
     Image,
+    TouchableOpacity,
   } from 'react-native';
 import RadialGradient from 'react-native-radial-gradient';
 
@@ -76,7 +77,6 @@ export default class PlanetView extends Component {
 
 		return (
 			<View style={styles.planetView}>
-            
 				<Text style={styles.planetText}>{name}</Text>
                 <RadialGradient 
                     colors={['#86a8df', '#122544']}
@@ -84,13 +84,18 @@ export default class PlanetView extends Component {
                     //center={[Dimensions.get('window').width / 3 , Dimensions.get('window').width / 2]}
                     radius={windowSize.width * 3/10}>
                     <View style={styles.planetContainer}>
-                        <Image
-                            style={planetStyle}
-                            source={url} 
-                        />
+                        <TouchableOpacity 
+                            activeOpacity={0.5}
+                            onLongPress={() => console.log("Testttt")}>
+                            <Image
+                                style={planetStyle}
+                                source={url} 
+                            />
+                        </TouchableOpacity>
                     </View>
 				
                 </RadialGradient>
+                <Text style={styles.infoText}>Planet text</Text>
 			</View>												
 		);
 	}
@@ -109,6 +114,13 @@ const styles = StyleSheet.create({
 		color: '#FFFFFF',
         marginBottom: 5,
         fontFamily: 'Orbitron-Regular',
+    },
+    infoText: {
+		textAlign: 'center',
+		fontSize: windowSize.width * 1/40,
+		color: '#FFFFFF',
+        marginBottom: 5,
+        fontFamily: 'OpenSans-Regular',
 	},
 	planets: {
 		width: windowSize.width * 2/5,

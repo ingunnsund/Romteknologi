@@ -26,7 +26,8 @@ import {
 import Slider from "react-native-slider";
 import { BleManager } from 'react-native-ble-plx';
 import RadialGradient from 'react-native-radial-gradient';
-import PlanetView from './Planet';
+import PlanetView from './components/Planet';
+import Arrow from './components/Arrow';
 import { stringToBytes, bytesToString } from 'convert-string';
 import base64 from 'react-native-base64'
 
@@ -37,6 +38,10 @@ const windowSize = Dimensions.get('window');
 Reload: adb shell input text "RR"
 Dev menu: adb shell input keyevent 82
 */
+
+
+// Sett timeout ved sending
+// Disable send knapp hvis bluetooth er av
 
 export default class App extends Component {
 	constructor(){
@@ -54,12 +59,13 @@ export default class App extends Component {
 			text: '0.1',
 			bluetoothSymbol: '#990000',
 			page: 1,
-			sliderValue: 0.4
+			sliderValue: 0.4,
+			buttonDisable: true,
+			connect: "Not connected",
 		}
 
 		this.handleArrowScroll = this.handleArrowScroll.bind(this);
 		this.handlePlanetScroll = this.handlePlanetScroll.bind(this);
-		this.scroll = null;
 	 
 		this.prefixUUID = "0000ffe"
 		this.suffixUUID = "-0000-1000-8000-00805f9b34fb"
@@ -69,11 +75,11 @@ export default class App extends Component {
 		return this.prefixUUID + "0" + this.suffixUUID
 	}
 
-	characteristicWUUID(num) {
+	characteristicWUUID() {
 		return this.prefixUUID + "1" + this.suffixUUID
 	}
 
-	characteristicNUUID(num) {
+	characteristicNUUID() {
 		return this.prefixUUID + "1" + this.suffixUUID
 	}
 
@@ -83,21 +89,29 @@ export default class App extends Component {
 
 	error(message) {
 		this.setState({info: "ERROR: " + message})
-		this.setState({bluetoothSymbol: '#990000'});
+		this.bluetoothOff();
 	}
 
 	updateValue(key, value) {
 		this.setState({values: {...this.state.values, [key]: value}})
 	}
 
-	componentWillUnmount () {
-		this.keyboardDidShowListener.remove();
-	  }
+	bluetoothOn(connectionText) {
+		this.setState({bluetoothSymbol: '#FFFFFF'});
+		this.setState({buttonDisable: false});
+		this.setState({connect: connectionText});
+	}
+
+	bluetoothOff() {
+		this.setState({bluetoothSymbol: '#990000'});
+		this.setState({buttonDisable: true});
+		this.setState({connect: "Not connected"});
+	}
 
 	componentWillMount() {
 		const subscription = this.manager.onStateChange((state) => {
 			if (state === 'PoweredOn') {
-				//this.scanAndConnect();
+				this.scanAndConnect();
 				subscription.remove();
 			} else {
 				console.log("Bluetooth is powered off");
@@ -139,8 +153,9 @@ export default class App extends Component {
 				this.manager.stopDeviceScan();
 
 				device.connect().then((device) => {
-					console.log("Connected to " + device.name);
-					this.setState({bluetoothSymbol: '#FFFFFF'});
+					connectionText = "Connected to " + device.name;
+					console.log(connectionText);
+					this.bluetoothOn(connectionText);
 
 					return device.discoverAllServicesAndCharacteristics();
 				}).then((device) => {
@@ -176,10 +191,13 @@ export default class App extends Component {
 		
 		this.state.device.writeCharacteristicWithResponseForService(service, characteristic, base64.encode(data)).then(ch => {
 			console.log("Sent: " + base64.decode(ch.value));
-
 		}).catch(error => {
 			console.log(error);
 		});
+		this.setState({buttonDisable: true});
+		setTimeout(() => {
+			this.setState({buttonDisable: false});
+		}, 2000);
 	}
 
 	handleArrowScroll(event) {
@@ -211,7 +229,6 @@ export default class App extends Component {
 		let min = 0;
 
 		for(let i = min*10; i <= max*10; i++){
-
 			values.push(
 				<Picker.Item label={(i/10).toFixed(1).toString()} value={(i/10).toFixed(1).toString()} key={(i/10).toFixed(1).toString()} />
 			)
@@ -222,12 +239,18 @@ export default class App extends Component {
 					backgroundColor="#0b172b"
 					barStyle="light-content"
 				/>
-				<View>
+				<View style={styles.bluetoothContainer}>
 					<Image 
 						style={[styles.bluetooth, {tintColor: this.state.bluetoothSymbol}]}
 						source={require('romteknologiapp/images/bluetooth.png')}
 					/>
+					<Text style={[styles.text/*, {position: 'absolute'}*/]}>
+						{(this.state.connect)}
+					</Text>
 				</View>
+				<Text style={styles.text}>
+					Trykk på en planet eller velg verdi for å sette G
+				</Text>
 				<View style={styles.container1}>
 					<ViewPagerAndroid
 						ref="planetScroll"
@@ -236,7 +259,7 @@ export default class App extends Component {
 						onPageSelected={(page) => {
 							this.handlePlanetScroll(page.nativeEvent.position)
 						}}>
-						<View key="1">
+						<View key="1"> 
 							<PlanetView planet="sun" />
 						</View>
 						<View key="2">
@@ -316,7 +339,10 @@ export default class App extends Component {
 						}}>
 						{ values }
 					</Picker>
-					<Button title="Send" onPress={() => this.sendData(this.state.text)} />
+					<Button 
+						title="Send"
+						disabled={this.state.buttonDisable}
+					 	onPress={() =>  this.sendData((this.state.text))} />
 				</View>
 				
 			</View>
@@ -324,50 +350,6 @@ export default class App extends Component {
 		);
 	}
 }
-
-let off = 1;
-class Arrow extends React.Component {
-	state = {
-	  fadeAnim: new Animated.Value(0.2),  
-	}
-  
-	componentDidMount() {
-		off *= -1;
-		this.runAnimation(0.6); 
-	}
-
-	runAnimation(end) {
-		
-		Animated.timing(                
-			this.state.fadeAnim, 
-			{
-			  toValue: end,  
-			  duration: 1000,
-			}
-		  ).start(() => {
-			
-			if(off === -1) {
-				off *= -1;
-				this.runAnimation(0.2)
-			} else {
-				off *= -1;
-				this.runAnimation(0.6)
-			}
-		  });    
-	}
-  
-	render() {
-	  let { fadeAnim } = this.state;
-  
-	  return (
-		<Animated.View                 // Special animatable View
-		  style={{/*...styles.arrow, */opacity: fadeAnim, position: 'absolute', height: windowSize.width * 1/10 }}
-		>
-		  {this.props.children}
-		</Animated.View>
-	  );
-	}
-  }
 
 const styles = StyleSheet.create({
 	container: {
@@ -381,10 +363,13 @@ const styles = StyleSheet.create({
 		height: windowSize.width * 8/10,
 		//backgroundColor: '#F5FCFF',
 	},
+	bluetoothContainer: {
+		flexDirection: 'row',	
+		alignItems: 'center',
+	},
 	bluetooth: {
-		width: 50,
-		height: 50,
-		//tintColor: '#62af87',
+		width: 30,
+		height: 30,
 	},
 	arrowLeft: {
 		position: 'absolute',
