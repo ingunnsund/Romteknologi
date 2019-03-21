@@ -1,56 +1,86 @@
-#include <LowPower.h>
+
+#include <MPU6050.h>
 
 #include <DFRobot_I2CMultiplexer.h>
 #include "Wire.h" 
 
-#include <helper_3dmath.h>
-#include <MPU6050.h>
-
+#include <LowPower.h>
 #include <avr/sleep.h>
 #include <avr/power.h>
 
+/* Static I2C adress of the MPU5060 (accel-chip) */
 #define ACCEL_ADDR 0x69 
+
+/*
+ * One of the 8 possible (0x70-0x77) I2C addresses of the I2C multiplexer, can be changed with switches on the board.
+ * The ports that the accelerometer sensor are attached to on the I2C multiplexer (possible: 0-7).
+ */
 #define I2C_MUX_ADDR 0x70 
 #define ACCEL1_PORT 0
 #define ACCEL2_PORT 4
 #define ACCEL3_PORT 7
 
-//#define SERIAL_BAUD_R 19200
+/* Baud rate of the bluetooth chip, can be changed with "AT commands". */
 #define SERIAL_BAUD_R 115200
 
+/* Used to set the +/- range of the g-force that the accelerometers will measure */ 
 #define G_RANGE_2 0
 #define G_RANGE_4 1
 #define G_RANGE_8 2
 #define G_RANGE_16 3
 #define G_RANGE G_RANGE_4
 
-
+/* Used to convert the raw data into g-force, should be set based upon G_RANGE */ 
 #define COUNTS_PER_G_2G 16384
 #define COUNTS_PER_G_4G 8192
 #define COUNTS_PER_G_8G 4096
 #define COUNTS_PER_G_16G 2048
+#define COUNTS_PER_G COUNTS_PER_G_4G
 
-#define COUNTS_PER_G COUNTS_PER_G_2G
+/* Used to set the frequency at which the MPU6050 (accel-chip) wakes up and do a measurement */ 
+#define WAKE_FREQ_40HZ 3
 
-
-
-int16_t ax1, ay1, az1;  // define accel as ax,ay,az
-int16_t ax2, ay2, az2;  // define accel as ax,ay,az
-int16_t ax3, ay3, az3;  // define accel as ax,ay,az
-int16_t avg_x, avg_y, avg_z; 
-
+/*Calibration constants calculated at startup*/ 
 int32_t z1_cal, z2_cal, z3_cal; 
-
-bool isPaired = false; 
-uint8_t isPaired_counter = 0; 
-
 
 /*Create acceleration sensor object*/
 MPU6050 accel;  
 
-/*Create an I2C Multiplexer object*/ 
+/* 
+ *  Since the acceleration sensors have the same fixed I2C adress, 
+ *  a I2C multiplexer is used. By only declaring one accel object, 
+ *  and then changing port with the I2CMultiplexer object, we 
+ *  can select the different sensors and use the methods for the 
+ *  single accel object to read data and do setup. 
+ */
+
+/*Create an I2C Multiplexer object */
 DFRobot_I2CMultiplexer I2CMulti(I2C_MUX_ADDR);
 
+
+void init_accel(int ACCEL_PORT) { 
+ 
+   I2CMulti.selectPort(ACCEL_PORT);
+   
+   accel.initialize();  
+   
+   accel.setFullScaleAccelRange(G_RANGE);
+
+   /*disable all DOF + temp sensor except Z-axis accel*/ 
+   accel.setStandbyXGyroEnabled(true);
+   accel.setStandbyYGyroEnabled(true);
+   accel.setStandbyZGyroEnabled(true);
+   accel.setStandbyYAccelEnabled(true);
+   accel.setStandbyXAccelEnabled(true); 
+   accel.setTempSensorEnabled(false);
+   
+   /*
+    * Disable that the MPU6050 sleeps and wakes up with a given frequency to measure acceleration, 
+    * so that we can do a quick calibration, 
+    * after calibration it will be enabled again. 
+    */
+   accel.setWakeCycleEnabled(false);
+}
 
 
 void calibrate_accels(void) {
@@ -73,88 +103,32 @@ void calibrate_accels(void) {
   z3_cal /= 100;   
 }
 
-void init_accel(void) { 
-  
-   /* Select accel1 */ 
-   Serial.println("Initializing I2C devices...");
-   I2CMulti.selectPort(ACCEL1_PORT);
-   accel.initialize();  
-   accel.setFullScaleAccelRange(G_RANGE);
-   accel.setStandbyXGyroEnabled(true);
-   accel.setStandbyYGyroEnabled(true);
-   accel.setStandbyZGyroEnabled(true);
-   accel.setStandbyYAccelEnabled(true);
-   accel.setStandbyXAccelEnabled(true); 
-   
-   I2CMulti.selectPort(ACCEL2_PORT);
-   accel.initialize();
-   accel.setFullScaleAccelRange(G_RANGE);
-   accel.setStandbyXGyroEnabled(true);
-   accel.setStandbyYGyroEnabled(true);
-   accel.setStandbyZGyroEnabled(true);
-   accel.setStandbyYAccelEnabled(true);
-   accel.setStandbyXAccelEnabled(true); 
 
-   I2CMulti.selectPort(ACCEL3_PORT);
-   accel.initialize();
-   accel.setFullScaleAccelRange(G_RANGE);
-   accel.setStandbyXGyroEnabled(true);
-   accel.setStandbyYGyroEnabled(true);
-   accel.setStandbyZGyroEnabled(true);
-   accel.setStandbyYAccelEnabled(true);
-   accel.setStandbyXAccelEnabled(true); 
-   
-  
-   Serial.println("Testing device connections...");
-   I2CMulti.selectPort(ACCEL1_PORT);
-   Serial.println(accel.testConnection() ? "Accel1 connection successful" : "Accel1 connection failed");
-
-   I2CMulti.selectPort(ACCEL2_PORT);
-   Serial.println(accel.testConnection() ? "Accel2 connection successful" : "Accel2 connection failed");
-
-   I2CMulti.selectPort(ACCEL3_PORT);
-   Serial.println(accel.testConnection() ? "Accel3 connection successful" : "Accel3 connection failed");
-    
-   
-   Serial.println("Calibrating accelerometers..."); 
-   calibrate_accels(); 
-   Serial.println("Calibration finished"); 
-   Serial.flush();
+void enable_wake_up_cycle(int ACCEL_PORT) {
+   I2CMulti.selectPort(ACCEL_PORT);
+   accel.setWakeFrequency(WAKE_FREQ_40HZ);
+   delay(5); 
+   accel.setWakeCycleEnabled(true);
 }
+
 
 void setup() {
-   /*Init serial communication*/ 
    Serial.begin(SERIAL_BAUD_R); 
-   Serial.setTimeout(5000);
+   init_accel(ACCEL1_PORT); 
+   init_accel(ACCEL2_PORT); 
+   init_accel(ACCEL3_PORT); 
 
-   init_accel(); 
+   calibrate_accels(); 
 
-   //sleep_setup(); 
+   /* Set all MPU5060s to sleep with a wake-up frequency of 40Hz or 10Hz, 
+    * documentation unclear...
+    * Each wakeup the MPU5060 does a accel measurement and goes back to sleep
+    */
+   enable_wake_up_cycle(ACCEL1_PORT); 
+   enable_wake_up_cycle(ACCEL2_PORT);
+   enable_wake_up_cycle(ACCEL3_PORT);
 }
 
-void printRawAccel(int16_t ax, int16_t ay, int16_t az, int port) {
-    Serial.print("a/g:\t");
-    Serial.print(ax); 
-    Serial.print("\t");
-    Serial.print(ay); 
-    Serial.print("\t");
-    Serial.println(az); 
-}
-
-void printgforce(float ax, float ay, float az, int port) {
-    ax = ax/COUNTS_PER_G; 
-    ay = ay/COUNTS_PER_G; 
-    az = az/COUNTS_PER_G; 
-
-    Serial.print("Accel");
-    Serial.print(port);
-    Serial.print(" g:\t");
-    Serial.print(ax); 
-    Serial.print("\t");
-    Serial.print(ay); 
-    Serial.print("\t");
-    Serial.println(az); 
-}
 
 float get_avg_gforce(void) {
   float avg_az = 0; 
@@ -170,60 +144,13 @@ float get_avg_gforce(void) {
   return avg_az/COUNTS_PER_G; 
 } 
 
-
-
-
 void loop() {
-
+  /*Send average g-force via UART to the bluetooth chip, which will transmit if it is paired */ 
+  Serial.println(get_avg_gforce());
   
-  I2CMulti.selectPort(ACCEL1_PORT);
-  accel.getAcceleration(&ax1, &ay1, &az1); 
-  printgforce((float)ax1,(float)ay1,(float)az1, ACCEL1_PORT); 
-  delay(100); 
-
-   /* 
-  I2CMulti.selectPort(ACCEL2_PORT);
-  accel.getAcceleration(&ax2, &ay2, &az2); 
-  //printgforce((float)ax2,(float)ay2,(float)az2, COUNTS_PER_G_2G, ACCEL2_PORT); 
-  //printRawAccel(ax2, ay2, az2, ACCEL3_PORT);
+  /*Wait untill all data have been sent before going to sleep*/ 
+  Serial.flush();
   
-  I2CMulti.selectPort(ACCEL3_PORT);
-  accel.getAcceleration(&ax3, &ay3, &az3); 
-  //accel.setSleepEnabled(true);
-  printgforce((float)ax3,(float)ay3,(float)az3, COUNTS_PER_G_2G, ACCEL3_PORT); 
-  //printRawAccel(ax3, ay3, az3, ACCEL3_PORT); 
-  */ 
-
-  /*
-  if(!isPaired_counter) {
-    Serial.println("ACK_REQ");  
-    uint8_t buf[8]; 
-    if(Serial.readBytes(buf, 8)) {
-      isPaired = true; 
-    } else {
-      isPaired = false; 
-    }
-    Serial.println("ACK over"); 
-  }
-
-  isPaired_counter++; 
-  isPaired_counter %= 10; 
-
-  if(isPaired) {
-      Serial.print("g:\t");
-      Serial.println(get_avg_gforce());  
-  }
-  */
- 
-
-  
-  /*Serial.print("g:\t");
-  Serial.println(get_avg_gforce());  
-  */
-  
-  
-  
-  //Serial.flush();
-  //LowPower.powerDown(SLEEP_120MS, ADC_OFF, BOD_OFF); 
-  
+  /*Do a complete powerdown and sleep for 120 ms, turn off the ADC and brown out detection*/
+  LowPower.powerDown(SLEEP_120MS, ADC_OFF, BOD_OFF);  
 }
