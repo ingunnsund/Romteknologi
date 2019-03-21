@@ -20,14 +20,8 @@
 #define ACCEL2_PORT 4
 #define ACCEL3_PORT 7
 
-<<<<<<< HEAD
 /* Baud rate of the bluetooth chip, can be changed with "AT commands". */
 #define SERIAL_BAUD_R 115200
-=======
-//#define SERIAL_BAUD_R 19200
-//#define SERIAL_BAUD_R 115200
-#define SERIAL_BAUD_R 9600
->>>>>>> a88c35dc0cad01b813b29656d45076ce4cb4aa09
 
 /* Used to set the +/- range of the g-force that the accelerometers will measure */ 
 #define G_RANGE_2 0
