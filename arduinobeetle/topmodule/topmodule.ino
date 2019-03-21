@@ -129,7 +129,24 @@ void setup() {
    enable_wake_up_cycle(ACCEL3_PORT);
 }
 
+/* 
+ * this reset function sets the program counter to zero.  
+ * It needs to be called each time external power is turned off and on again.  
+ * This is because the PCB layout has a bug. The active low reset pin is connected 
+ * straight to VCC, so when it loses power, the whole microcontroller is turned off 
+ * before a reset happens. When it is turned on, the reset pin is high at the same 
+ * time as the rest of the microcontroller is turned on. The accelerometers won't 
+ * be initilaized properly when this happens, and they will return exactly 0. 
+ * By checking if the value from all three accelerometers are 0, we know that a 
+ * power off-on has happened and we can call the reset function. 
+ * This is a total hack, but it works. 
+ */
+void(* resetFunc) (void) = 0; 
 
+/*
+ * get acceleration raw data from each sensor, compute average and convert to g-force. 
+ * reset device if exactly zero acceleration is detected. 
+ */
 float get_avg_gforce(void) {
   float avg_az = 0; 
   I2CMulti.selectPort(ACCEL1_PORT);
@@ -140,6 +157,10 @@ float get_avg_gforce(void) {
   avg_az += accel.getAccelerationZ() - z3_cal; 
  
   avg_az /= 3; 
+
+  if(avg_az == 0) {
+      resetFunc(); 
+  }
   
   return avg_az/COUNTS_PER_G; 
 } 
