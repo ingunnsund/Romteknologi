@@ -1,9 +1,9 @@
-#define IN_SPEED_PIN 2
-#define DIRECTION_PIN 3
-#define OUT_SPEED_PIN 4
+#define IN_SPEED_PIN 2 // grønn
+#define DIRECTION_PIN 3 // gul
+#define OUT_SPEED_PIN 4 // blå
 #include <math.h>
 
-#define TO_SCALE_PWM 238 
+#define TO_SCALE_PWM 237 
 #define TO_SCALE_DELAY 10
 
 
@@ -29,8 +29,6 @@ void rotate_to_scale(void) {
         }
      }
 }
-
-
 
 void set_motordir_fw(void) {
   digitalWrite(DIRECTION_PIN, HIGH); 
@@ -69,8 +67,8 @@ void set_rpm_target(uint8_t rpm) {
 }
 
 void motor_controller(void) {
-  Serial.print("Target rpm: "); 
-  Serial.print(target_rpm); 
+  //Serial.print("Target rpm: "); 
+  //Serial.print(target_rpm); 
   if(motor_on) {
     int current_rpm = get_motor_rpm(); 
     if(current_rpm < 0) {
@@ -80,15 +78,15 @@ void motor_controller(void) {
     if(current_rpm > 255) {
       current_rpm = 255; 
     }
-    Serial.print(" Current rpm: ");
-    Serial.print(current_rpm); 
+    //Serial.print(" Current rpm: ");
+    //Serial.print(current_rpm); 
     int error = target_rpm - current_rpm; 
     err_acc += error; 
 
-    Serial.print(" Error: ");
-    Serial.print(error); 
-    Serial.print(" Err_acc: ");
-    Serial.print(err_acc); 
+    //Serial.print(" Error: ");
+    //Serial.print(error); 
+    //Serial.print(" Err_acc: ");
+    //Serial.print(err_acc); 
     current_pwm = 255 - (int)(Kp * (float) error + Ki * (float)err_acc); 
     if(current_pwm < 0) {
       current_pwm = 0; 
@@ -99,8 +97,8 @@ void motor_controller(void) {
      current_pwm = 255; 
      err_acc = 0; 
   }
-  Serial.print(" Current pwm: ");
-  Serial.println(current_pwm); 
+  //Serial.print(" Current pwm: ");
+  //Serial.println(current_pwm); 
   set_motor_pwm((uint8_t)current_pwm);
 }
 
@@ -109,4 +107,5 @@ void motor_setup(void) {
   pinMode(OUT_SPEED_PIN, OUTPUT); //to choose speed
   set_motordir_fw(); 
   set_rpm_target(0); 
+  set_motor_pwm(255); 
 }
