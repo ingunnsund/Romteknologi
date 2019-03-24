@@ -18,86 +18,80 @@
  * GREEN if it is connected to the top module (but not the app) and BLUE if it is connected to the app. 
  */
 
-#define LED_RED_PIN 11
-#define LED_GREEN_PIN 12 
-#define LED_BLUE_PIN 13 
 
 //Mega<->Serial Monitor 
 #define BAUD_RATE_SERIAL0 9600 // 115200
 
-#define SWITCH_PIN 10 //?? oransje, (gul til jord)
+#define SWITCH_PIN 20 //?? grønn, (gul til jord)
 
 //TODO: remove and replace with accel 1 g 
-#define MANUAL_MODE_1G 100 
+#define MANUAL_MODE_1G 69
 
 volatile bool manual_mode; 
 volatile bool to_scale_mode = false;  
 
+void setup(){ 
 
-void setup() { 
-  //For serial monitor thorugh usb
-  Serial.begin(BAUD_RATE_SERIAL0);
-  delay(1000); 
+  motor_setup();
+
+  rgb_led_setup(); 
+  
+  //Mega<->Serial Monitor 
+  Serial.begin(BAUD_RATE_SERIAL0); 
+
+  //delay(1000); 
 
   bt_init();
-  
-  rgb_led_setup(); 
-
+ 
   //switch setup
    pinMode(SWITCH_PIN, INPUT_PULLUP); 
    attachInterrupt(digitalPinToInterrupt(SWITCH_PIN), handle_switch_event, CHANGE);
    handle_switch_event(); 
   
-   motor_setup();
- 
-  Serial.println("Setup complete");
+   Serial.println("Setup complete");
+
 } 
 
-void loop() { 
 
-  bt_controller();
+void loop(){ 
 
-  
-
-  //possibly send some ack to the beetle that it should keep measuring accel if that is needed? 
 
   //send current g_force to app here
 
-  
+  bt_controller(); 
 
-  // Commented out for bluetooth testing
-  /*
   if(manual_mode) {
-    set_rpm_target(MANUAL_MODE_1G); 
-    motor_controller(); 
-
-    //TODO: can also set g target here instead if it is is connected to the topmodule 
-    
-     // set_g_target(1); 
-     // g_force_controller(); 
-     
-    
+     if(bt_is_top_connected()) {
+        set_g_target(1);  
+     } else {
+        set_rpm_target(MANUAL_MODE_1G); 
+     }
   } else {
-    //read monitor input, should be replaced with bluetooth. 
-    if (Serial.available()){
-      float target = Serial.parseFloat(); 
-      if(target < 0) {
-         to_scale_mode = true; 
-         rotate_to_scale(); 
+      if(bt_is_app_connected()) {
+         set_BLUE_LED(); 
+         float target = bt_get_app_target_g();
+         if(target < 0) {
+            to_scale_mode = true; 
+            rotate_to_scale(); 
+         } else {
+            to_scale_mode = false; 
+            set_g_target(target); 
+         }
+      } else if(bt_is_top_connected()) {
+        set_GREEN_LED(); 
+        set_g_target(0); 
       } else {
-        to_scale_mode = false; 
-        set_g_target(Serial.parseFloat()); 
+        set_WHITE_LED(); 
+        set_g_target(0);
       }
-    }
-  
-    if(!to_scale_mode) {
-      g_force_controller(); 
-      
-      motor_controller(); 
-    }
   }
-  */
-     
+  
+  if(!to_scale_mode) {
+    if(bt_is_top_connected()) {
+        g_force_controller(); 
+    }
+    motor_controller(); 
+  }
 }
 
 void handle_switch_event(void) {

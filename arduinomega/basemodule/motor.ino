@@ -1,9 +1,9 @@
-#define IN_SPEED_PIN 2 // blå
+#define IN_SPEED_PIN 2 // grønn
 #define DIRECTION_PIN 3 // gul
-#define OUT_SPEED_PIN 4 // grønn
+#define OUT_SPEED_PIN 4 // blå
 #include <math.h>
 
-#define TO_SCALE_PWM 238 
+#define TO_SCALE_PWM 237 
 #define TO_SCALE_DELAY 10
 
 
@@ -29,8 +29,6 @@ void rotate_to_scale(void) {
         }
      }
 }
-
-
 
 void set_motordir_fw(void) {
   digitalWrite(DIRECTION_PIN, HIGH); 
@@ -109,4 +107,5 @@ void motor_setup(void) {
   pinMode(OUT_SPEED_PIN, OUTPUT); //to choose speed
   set_motordir_fw(); 
   set_rpm_target(0); 
+  set_motor_pwm(255); 
 }

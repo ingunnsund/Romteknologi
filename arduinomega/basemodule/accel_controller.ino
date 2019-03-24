@@ -2,8 +2,8 @@
 #define MAX_G_TARGET 4
 
 volatile float target_g; 
-float Ki_g = 0.1 ; 
-float Kp_g = 0.001; 
+float Ki_g = 0.5 ; 
+float Kp_g = 3; 
 float err_acc_g; 
 
 void set_g_target(float target) {
@@ -17,14 +17,11 @@ void set_g_target(float target) {
   
 }
 
-float get_current_g(void) { 
-  //return <bluetooth magic here>
-}
 
 void g_force_controller(void) {
      Serial.print("Target g: "); 
      Serial.print(target_g); 
-     int current_g = get_current_g(); 
+     float current_g = bt_get_top_current_g();
      Serial.print(" current g: "); 
      Serial.print(current_g);
      float error = target_g - current_g; 
@@ -32,10 +29,12 @@ void g_force_controller(void) {
      Serial.print(" Error: ");
      Serial.print(error); 
      Serial.print(" Err_acc: ");
-     Serial.println(err_acc_g); 
-     int target_rpm = (int)(Kp_g * (float) error + Ki_g * (float)err_acc_g);  //should there be a minus somewhere? 
+     Serial.print(err_acc_g); 
+     int target_rpm = 20 + (int)(Kp_g * (float) error + Ki_g * (float)err_acc_g);  //should there be a minus somewhere? 
      //should there be some max or min here ?
-     //when will err_acc be cleared? 
+     //when will err_acc be cleared?    
+     Serial.print( "Target rpm: "); 
+     Serial.println(target_rpm); 
      set_rpm_target(target_rpm); 
 
 }

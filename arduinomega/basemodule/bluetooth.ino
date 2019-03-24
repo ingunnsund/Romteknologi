@@ -2,8 +2,8 @@
 volatile bool app_connected = false;
 volatile bool top_connected = false; 
 
-float top_current_g = 0;
-float app_target_g = 0;
+volatile float top_current_g = 0;
+volatile float app_target_g = 0;
 
 //Mega<->HM-10(topmodule) 
 #define BAUD_RATE_SERIAL1 9600
@@ -24,10 +24,11 @@ char c=' ';
 // ================================ //
 
 void wait_for_at_ok(){
-  delay(700);
+  //delay(700);
+  delay(10); 
 }
 
-void bluetooth_init_top_comm(){
+void bluetooth_init_top_comm(void){
     Serial.println("BLE setup for top module start");
   
     // For HM-10 -> Top module interface
@@ -65,7 +66,7 @@ void bluetooth_init_top_comm(){
     Serial.println("BLE setup for top module complete");
 }
 
-void bluetooth_init_app_comm(){
+void bluetooth_init_app_comm(void){
     Serial.println("BLE setup for app start");
   
     //For HM-10 -> App interface
@@ -93,12 +94,14 @@ void bluetooth_init_app_comm(){
 }
 
 void send_to_app(float g){
-  char value[6];
+  /*char value[6];
   dtostrf(g, 4, 2, value);
   Serial2.write(value);
+  */ 
+  Serial2.println(g); 
 }
 
-float receive_from_top(){
+float receive_from_top(void){
   float val = top_current_g;
   if (Serial1.available()){
         val = Serial1.parseFloat();
@@ -106,7 +109,7 @@ float receive_from_top(){
   return val;
 }
 
-float receive_from_app(){
+float receive_from_app(void){
   float val = app_target_g;
   if (Serial2.available()){
         val = Serial2.parseFloat();
@@ -114,12 +117,12 @@ float receive_from_app(){
   return val;
 }
 
-void reconnect(){
+void reconnect(void){
   Serial1.print("AT+CONNL");
-  delay(1000);
+  delay(50); //TODO: shorter delay? 
 }
 
-bool check_connection_top(){
+bool check_connection_top(void){
   if (not top_connected and digitalRead(STATUS_TOP_PIN) == 1){
     digitalWrite(STATUS_TOP_LED, HIGH);
     top_connected = true;
@@ -131,7 +134,7 @@ bool check_connection_top(){
   return top_connected;
 }
 
-bool check_connection_app(){
+bool check_connection_app(void){
   if (not app_connected and digitalRead(STATUS_APP_PIN) == 1){
     digitalWrite(STATUS_APP_LED, HIGH);
     app_connected = true;
@@ -144,7 +147,7 @@ bool check_connection_app(){
 }
 
 boolean NL = true;
-void bluetooth_loop_app(){
+void bluetooth_loop_app(void){
   // Read from the Bluetooth module and send to the Arduino Serial Monitor
     if (Serial2.available()){
         c = Serial2.read();
@@ -168,7 +171,7 @@ void bluetooth_loop_app(){
     }
 }
 
-void bluetooth_loop_top(){
+void bluetooth_loop_top(void){
   // Read from the Bluetooth module and send to the Arduino Serial Monitor
     if (Serial1.available()){
         c = Serial1.read();
@@ -197,7 +200,7 @@ void bluetooth_loop_top(){
 // ===== Public funksjoner ====== //
 
 // Denne blir kalt ved setup
-void bt_init(){
+void bt_init(void){
   
   pinMode(STATUS_TOP_PIN, INPUT);
   pinMode(STATUS_TOP_LED, OUTPUT);
@@ -213,7 +216,7 @@ void bt_init(){
 }
 
 // Denne blir kalt regelmessig i loop
-void bt_controller(){
+void bt_controller(void){
 
   //bluetooth_loop_app();
   //bluetooth_loop_top();
@@ -223,7 +226,7 @@ void bt_controller(){
   app_connected = check_connection_app();
 
   if (top_connected){
-    top_current_g = receive_from_top();
+    top_current_g = receive_from_top(); 
     if (app_connected){
       send_to_app(top_current_g);
     }
@@ -236,22 +239,20 @@ void bt_controller(){
     app_target_g = receive_from_app();
     Serial.println(app_target_g);
   }
-  
-  delay(100);
 }
 
-bool bt_is_app_connected(){
+bool bt_is_app_connected(void){
   return app_connected;
 }
 
-bool bt_is_top_connected(){
+bool bt_is_top_connected(void){
   return top_connected;
 }
 
-float bt_get_top_current_g(){
+float bt_get_top_current_g(void){
   return top_current_g;
 }
 
-float bt_get_app_target_g(){
+float bt_get_app_target_g(void){
   return app_target_g;
 }
