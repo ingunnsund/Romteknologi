@@ -23,9 +23,14 @@ char c=' ';
 
 // ================================ //
 
+
+/*you have to enable delay of 700 in order for the setup to actually happen, 
+ * but since the setup har run before, the setup is not neccesary every start-up
+ */
+
 void wait_for_at_ok(){
   //delay(700);
-  delay(10); 
+   delay(10); 
 }
 
 void bluetooth_init_top_comm(void){
@@ -119,7 +124,7 @@ float receive_from_app(void){
 
 void reconnect(void){
   Serial1.print("AT+CONNL");
-  delay(50); //TODO: shorter delay? 
+  delay(50);
 }
 
 bool check_connection_top(void){
@@ -237,7 +242,6 @@ void bt_controller(void){
 
   if (app_connected){
     app_target_g = receive_from_app();
-    Serial.println(app_target_g);
   }
 }
 

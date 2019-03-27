@@ -30,6 +30,9 @@
 volatile bool manual_mode; 
 volatile bool to_scale_mode = false;  
 
+uint8_t counter = 0; 
+
+
 void setup(){ 
 
   motor_setup();
@@ -38,8 +41,6 @@ void setup(){
   
   //Mega<->Serial Monitor 
   Serial.begin(BAUD_RATE_SERIAL0); 
-
-  //delay(1000); 
 
   bt_init();
  
@@ -82,17 +83,22 @@ void loop(){
         set_g_target(0); 
       } else {
         set_WHITE_LED(); 
-        set_g_target(0);
+        set_rpm_target(0);
       }
   }
   
   if(!to_scale_mode) {
-    if(bt_is_top_connected()) {
+    if(bt_is_top_connected() && counter%4 == 0) {
         g_force_controller(); 
     }
     motor_controller(); 
+    counter++; 
   }
-}
+
+  
+} 
+
+
 
 void handle_switch_event(void) {
   if(digitalRead(SWITCH_PIN) == LOW) {

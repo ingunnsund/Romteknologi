@@ -4,7 +4,7 @@
 #include <math.h>
 
 #define TO_SCALE_PWM 237 
-#define TO_SCALE_DELAY 10
+#define TO_SCALE_DELAY 100
 
 
 int target_rpm = 0; 
@@ -20,14 +20,7 @@ int err_acc = 0;
 /* to scale for 1 g is 10 rpm which is too low for the encoder to read out -> 
 the motor controller won't work at this speed. This function decends to that speed manually */ 
 void rotate_to_scale(void) {
-     if(current_pwm >= TO_SCALE_PWM) {
-        set_motor_pwm(TO_SCALE_PWM);
-     } else {
-        for(int pwm = current_pwm+1; pwm <= TO_SCALE_PWM; pwm++) { 
-            set_motor_pwm(pwm); 
-            delay(TO_SCALE_DELAY); 
-        }
-     }
+  set_motor_pwm(TO_SCALE_PWM); 
 }
 
 void set_motordir_fw(void) {
