@@ -76,6 +76,7 @@ export default class App extends Component {
 
 		this.handleArrowScroll = this.handleArrowScroll.bind(this);
 		this.handlePlanetScroll = this.handlePlanetScroll.bind(this);
+		this.pressPlanet = this.pressPlanet.bind(this);
 	 
 		this.prefixUUID = "0000ffe"
 		this.suffixUUID = "-0000-1000-8000-00805f9b34fb"
@@ -246,6 +247,13 @@ export default class App extends Component {
 		this.setState({modalVisible: visible});
 	}	
 
+	pressPlanet(value) {
+		console.log(value);
+		if(!this.state.buttonDisable) {
+			this.sendData(value);
+		}
+	}
+
 	render() {
 		let values = [];
 		let max = 4;
@@ -260,12 +268,7 @@ export default class App extends Component {
 		values.push(
 			<Picker.Item label={"-1"} value={"-1"} key={"4.1"} />
 		)
-		/**
-		 * <Text style={styles.text}>
-					Trykk på en planet eller velg verdi for å sette G
-				</Text>
-		 */
-
+		
 		//https://www.flaticon.com/free-icon/information_906794#term=question%20mark&page=1&position=2
 		//https://www.flaticon.com/free-icon/cancel_126497#term=cross&page=1&position=3
 		return (
@@ -363,34 +366,34 @@ export default class App extends Component {
 							this.handlePlanetScroll(page.nativeEvent.position)
 						}}>
 						<View key="1">
-							<PlanetView planet="mercury" />
+							<PlanetView planet="mercury" pressPlanet={this.pressPlanet} />
 						</View>
 						<View key="2">
-							<PlanetView planet="venus" />
+							<PlanetView planet="venus" pressPlanet={this.pressPlanet} />
 						</View>
 						<View key="3">
-							<PlanetView planet="moon" />
+							<PlanetView planet="moon" pressPlanet={this.pressPlanet} />
 						</View>
 						<View key="4">
-							<PlanetView planet="earth" />
+							<PlanetView planet="earth" pressPlanet={this.pressPlanet} />
 						</View>
 						<View key="5">
-							<PlanetView planet="mars" />
+							<PlanetView planet="mars" pressPlanet={this.pressPlanet} />
 						</View>
 						<View key="6">
-							<PlanetView planet="jupiter" />
+							<PlanetView planet="jupiter" pressPlanet={this.pressPlanet} />
 						</View>
 						<View key="7">
-							<PlanetView planet="saturn" />
+							<PlanetView planet="saturn" pressPlanet={this.pressPlanet} />
 						</View>
 						<View key="8">
-							<PlanetView planet="uranus" />
+							<PlanetView planet="uranus" pressPlanet={this.pressPlanet} />
 						</View>
 						<View key="9">
-							<PlanetView planet="neptune" />
+							<PlanetView planet="neptune" pressPlanet={this.pressPlanet} />
 						</View>
 						<View key="10">
-							<PlanetView planet="spaceStation" />
+							<PlanetView planet="spaceStation" pressPlanet={this.pressPlanet} />
 						</View>
 					</ViewPagerAndroid>
 
