@@ -294,33 +294,60 @@ export default class App extends Component {
 							contentContainerStyle={styles.scrollModal}>
 						
 							<View style={{
-								marginTop: windowSize.width*1/8,
+								marginTop: windowSize.height*1/20, // windowSize.width*1/8,
 								flex: 1,
 								flexDirection: 'column',
 								justifyContent: 'center',
 								alignItems: 'center'}}>
 								<TouchableWithoutFeedback>
-								<View style={{
-									backgroundColor: '#000000',
-									width: windowSize.width*4/5,
-									height: windowSize.height*4/5,
-									borderRadius: 18,
-									elevation: 2,
-									opacity: 0.6,
-									shadowColor: 'black', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.16, shadowRadius: 16}}>
-								
-									<TouchableHighlight
-										onPress={() => {
-										this.setModalVisible(!this.state.modalVisible);
-										}}>
-										<Image 
-											style={styles.cancel}
-											source={require('romteknologiapp/images/cancel.png')}
-											
-										/>
-									</TouchableHighlight>
-									<Text>Om prosjekt, om tyngdekraft, hvordan bruke appen osv.</Text> 
-								</View>
+									<View style={{
+										backgroundColor: '#000000',
+										width: windowSize.width*9/10, //4/5
+										height: windowSize.height*9/10,
+										borderRadius: 18,
+										//elevation: 2,
+										opacity: 0.9,
+										//marginLeft: windowSize.width/20,
+										//shadowColor: 'black', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.16, shadowRadius: 16
+									}}>
+										<View style={{
+										
+										margin: windowSize.width/40,
+									}}>
+									<View style={{flexDirection: 'row'}}>
+										<View style={{position: 'absolute', right: 0/*windowSize.width/40*/}}>
+										<TouchableHighlight
+											onPress={() => {
+												this.setModalVisible(!this.state.modalVisible);
+											}}>
+											<Image 
+												style={styles.iconWhite}
+												source={require('romteknologiapp/images/cancel.png')}
+												
+												/>
+										</TouchableHighlight>
+										</View>
+										<Text style={styles.textMedium}>Hvordan bruke appen</Text>
+												</View>
+										<Text style={[styles.textSmall]}>
+											Trykk på en planet for å velge planetens gravitasjonskraft (g). 
+											På Jorden er det mulig å velge g i scale..
+											Du kan velge bestemt kraft (mellom 0.1 og 4.0) ved å trykke på romstasjonen helt til høyre.
+										</Text>
+										<Text style={styles.textMedium}></Text>
+										<Text style={styles.textMedium}>Space Bungalow og tyngdekraft</Text>
+										<Text style={[styles.textSmall]}>
+										Tortor posuere ac ut consequat semper viverra nam libero justo. Tellus id interdum velit laoreet id donec ultrices. Fermentum leo vel orci porta non pulvinar. Ac orci phasellus egestas tellus rutrum tellus. Consequat ac felis donec et odio pellentesque. Semper quis lectus nulla at volutpat diam ut venenatis. Nunc non blandit massa enim nec dui nunc mattis enim. Congue mauris rhoncus aenean vel. Faucibus turpis in eu mi bibendum neque egestas congue quisque. At quis risus sed vulputate odio ut enim blandit. Libero volutpat sed cras ornare arcu dui vivamus. Porta nibh venenatis cras sed felis eget velit aliquet sagittis.
+							
+										</Text> 
+										<Text style={styles.textMedium}></Text>
+										<Text style={styles.textMedium}>Bibliotek og bilder</Text>
+										<Text style={[styles.textSmall]}>
+											Bluetooth bibliotek: React Native Ble Plx (https://github.com/Polidea/react-native-ble-plx){"\n"}
+											Planetbilder: Vector Designed By Neix # from pngtree.com (https://pngtree.com/freepng/planet-planet_1330808.html)
+										</Text>
+										</View>
+									</View>
 								</TouchableWithoutFeedback>
 							</View>
 						
@@ -334,7 +361,7 @@ export default class App extends Component {
 						style={[styles.bluetooth, {tintColor: this.state.bluetoothSymbol}]}
 						source={require('romteknologiapp/images/bluetooth.png')}
 					/>
-					<Text style={[styles.text/*, {position: 'absolute'}*/]}>
+					<Text style={[styles.textSmall/*, {position: 'absolute'}*/]}>
 						{(this.state.connect)}
 					</Text>
 					<View style={{/*flexDirection: 'row', *//*justifyContent: 'flex-end'*/ position: 'absolute', right: windowSize.width/40}}> 
@@ -344,7 +371,7 @@ export default class App extends Component {
 							this.manager.cancelTransaction(transactionID);
 							}}>
 						<Image 
-							style={styles.question}
+							style={styles.iconWhite}
 							source={require('romteknologiapp/images/question.png')}	
 						/>
 					</TouchableOpacity>
@@ -447,10 +474,10 @@ export default class App extends Component {
 						onValueChange={(value) =>
 							this.handleSliderScroll(value)}>
 					</Slider>
-					<View style={{/*flexDirection: 'row',*/ alignItems: 'center', justifyContent: 'center', borderColor: 'black', borderRadius: 4,
-    borderWidth: 0.5,}}>
-						<Text style={[styles.text, {fontSize: 39}]}>Gravitasjonskraft på romstasjonen: </Text>
-						<Text style={[styles.text, {fontSize: 39}]}>
+					<View style={{/*flexDirection: 'row',*/ alignItems: 'center', justifyContent: 'center', //borderColor: 'black', borderRadius: 4,
+    /*borderWidth: 0.5,*/}}>
+						<Text style={styles.textLarge}>Gravitasjonskraft på romstasjonen: </Text>
+						<Text style={styles.textLarge}>
 							{(this.state.values[this.characteristicNUUID()] || "0") + " g"}
 						</Text>
 					</View>
@@ -463,6 +490,17 @@ export default class App extends Component {
 		);
 	}
 }
+
+const textNormal = {
+	color: '#FFFFFF',
+	fontFamily: 'OpenSans-Regular',
+};
+const textOrbitron = {
+	color: '#FFFFFF',
+	fontFamily: 'Orbitron-Regular',
+};
+
+const iconSize = windowSize.width * 1/20;
 
 const styles = StyleSheet.create({
 	container: {
@@ -488,18 +526,14 @@ const styles = StyleSheet.create({
 		marginTop: windowSize.height * 1/150
 	},
 	bluetooth: {
-		width: 30,
-		height: 30,
+		width: iconSize,
+		height: iconSize,
+		marginLeft: windowSize.width * 1/80,
 	},
-	question: {
-		width: 30,
-		height: 30,
+	iconWhite: {
+		width: iconSize,
+		height: iconSize,
 		tintColor: '#FFFFFF',
-	},
-	cancel: {
-		width: 30,
-		height: 30,
-		
 	},
 	arrowLeft: {
 		position: 'absolute',
@@ -507,7 +541,7 @@ const styles = StyleSheet.create({
 	},
 	arrowRight: {
 		position: 'absolute',
-		left: windowSize.width * 31/80,//2/5,
+		left: windowSize.width * 31/80,
 	},
 	arrow1: {
 		width: windowSize.width * 2/20,
@@ -520,11 +554,24 @@ const styles = StyleSheet.create({
 		color: '#FFFFFF',
 		fontFamily: 'OpenSans-Regular',
 	},
+	textSmall: {
+		...textNormal,
+		fontSize: windowSize.width * 1/40,
+	},
+	textMedium: {
+		...textOrbitron,
+		fontSize: windowSize.width * 1/30,
+		marginBottom: windowSize.width * 1/150,
+	},
+	textLarge: {
+		...textNormal,
+		fontSize: windowSize.width * 1/20,
+	},
 	title: {
-		color: '#FFFFFF',
-		fontFamily: 'Orbitron-Regular',
-		fontSize: windowSize.width/14,
-		marginBottom: windowSize.height/60,
+		...textOrbitron,
+		fontSize: windowSize.width * 1/14,
+		marginBottom: windowSize.height * 1/60,
+		marginTop: windowSize.height * 1/120,
 	},
 	titleContainer: {
 		justifyContent: 'center',
