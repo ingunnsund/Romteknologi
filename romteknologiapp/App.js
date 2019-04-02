@@ -72,6 +72,8 @@ export default class App extends Component {
 			buttonDisable: true,
 			connect: 'Not connected',
 			modalVisible: false,
+			alertVisible: false,
+			data: '',
 		}
 
 		this.handleArrowScroll = this.handleArrowScroll.bind(this);
@@ -201,13 +203,17 @@ export default class App extends Component {
 		const characteristic = this.characteristicWUUID();
 
 		this.state.device.writeCharacteristicWithResponseForService(service, characteristic, base64.encode(data)).then(ch => {
-			console.log("Sent: " + base64.decode(ch.value));
+			let sent = base64.decode(ch.value);
+			console.log("Sent: " + sent);
+			this.setState({data: sent});
+			this.setAlertVisible(!this.state.alertVisible);	
 		}).catch(error => {
 			console.log(error);
 		});
 		this.setState({buttonDisable: true});
 		setTimeout(() => {
 			this.setState({buttonDisable: false});
+			this.setAlertVisible(!this.state.alertVisible);			
 		}, 2000);
 	}
 
@@ -245,10 +251,16 @@ export default class App extends Component {
 
 	setModalVisible(visible) {
 		this.setState({modalVisible: visible});
+	}
+
+	setAlertVisible(visible) {
+		this.setState({alertVisible: visible});
 	}	
 
 	pressPlanet(value) {
 		console.log(value);
+		//this.setState({data: value});
+		//this.setAlertVisible(!this.state.alertVisible);	
 		if(!this.state.buttonDisable) {
 			this.sendData(value);
 		}
@@ -280,10 +292,7 @@ export default class App extends Component {
 				<Modal
 					animationType="slide"
 					transparent={true}
-					visible={this.state.modalVisible}
-					onRequestClose={() => {
-						console.log('Modal has been closed.');
-					}}>
+					visible={this.state.modalVisible}>
 					<TouchableOpacity 
 						style={styles.modalContainer} 
 						activeOpacity={1} 
@@ -354,6 +363,45 @@ export default class App extends Component {
 						</ScrollView>
 					</TouchableOpacity>   
 					
+				</Modal>
+				<Modal
+					animationType="fade"
+					transparent={true}
+					visible={this.state.alertVisible}>
+					<TouchableOpacity 
+						style={styles.modalContainer} 
+						activeOpacity={1} 
+						//onPressOut={() => {this.setAlertVisible(false)}}
+						>
+						<ScrollView 
+							directionalLockEnabled={true} 
+							contentContainerStyle={styles.scrollModal}>
+						
+							<View style={{
+								marginTop: windowSize.height*6/16,
+								flex: 1,
+								flexDirection: 'column',
+								justifyContent: 'center',
+								alignItems: 'center'}}>
+								<TouchableWithoutFeedback>
+									<View style={{
+										backgroundColor: '#000000',
+										width: windowSize.width*3/10,
+										height: windowSize.height*5/40,
+										borderRadius: 18,
+										opacity: 0.8,
+									}}><View style={{margin: windowSize.width*1/80, justifyContent: 'center',
+									alignItems: 'center',flex: 1,
+									flexDirection: 'column',
+									marginLeft: windowSize.width*1/40}}>
+										<Text style={styles.textMedium2}>Sendt {this.state.data} g til romstasjonen</Text>
+										</View>
+									</View>
+								</TouchableWithoutFeedback>
+							</View>
+						
+						</ScrollView>
+					</TouchableOpacity>   
 				</Modal>
 				
 				<View style={styles.topContainer}>
@@ -562,6 +610,10 @@ const styles = StyleSheet.create({
 		...textOrbitron,
 		fontSize: windowSize.width * 1/30,
 		marginBottom: windowSize.width * 1/150,
+	},
+	textMedium2: {
+		...textNormal,
+		fontSize: windowSize.width * 1/30,
 	},
 	textLarge: {
 		...textNormal,
