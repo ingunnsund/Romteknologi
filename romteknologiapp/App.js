@@ -1,39 +1,28 @@
 import React, { Component } from 'react';
 import {
-  AppRegistry,
   StyleSheet,
   Text,
   View,
   TouchableHighlight,
   TouchableOpacity,
   TouchableWithoutFeedback,
-  NativeAppEventEmitter,
-  NativeEventEmitter,
-  NativeModules,
   Platform,
   PermissionsAndroid,
-  ListView,
   ScrollView,
-  AppState,
   Dimensions,
   Button,
   Image,
-  Animated,
-  Keyboard,
   StatusBar,
-  TextInput,
-  ViewPagerAndroid,
   Picker,
   Modal,
-  Alert,
-  Slider,
 } from 'react-native';
-//import Slider from "react-native-slider";
-import { BleManager, Subscription } from 'react-native-ble-plx';
-import RadialGradient from 'react-native-radial-gradient';
+import { BleManager } from 'react-native-ble-plx';
 import PlanetView from './components/Planet';
 import Arrow from './components/Arrow';
-import base64 from 'react-native-base64'
+import base64 from 'react-native-base64';
+import Slider from '@react-native-community/slider';
+import {Slider as SliderVertical} from 'react-native-elements';
+import ViewPagerAndroid from '@react-native-community/viewpager';
 
 const windowSize = Dimensions.get('window');
 const planetNumber = 10;
@@ -45,7 +34,6 @@ Debug commands:
 Reload: adb shell input text "RR"
 Dev menu: adb shell input keyevent 82
 */
-
 
 // Sett timeout ved sending
 // Disable send knapp hvis bluetooth er av
@@ -73,12 +61,18 @@ export default class App extends Component {
 			connect: 'Not connected',
 			modalVisible: false,
 			alertVisible: false,
+			choiceVisible: false,
+			pickerVisible: false,
 			data: '',
+			chooseValue: 2,
+			sendValue: '2.0',
 		}
 
 		this.handleArrowScroll = this.handleArrowScroll.bind(this);
 		this.handlePlanetScroll = this.handlePlanetScroll.bind(this);
 		this.pressPlanet = this.pressPlanet.bind(this);
+		this.pressStation = this.pressStation.bind(this);
+		this.pressEarth = this.pressEarth.bind(this);
 	 
 		this.prefixUUID = "0000ffe"
 		this.suffixUUID = "-0000-1000-8000-00805f9b34fb"
@@ -98,11 +92,21 @@ export default class App extends Component {
 
 	info(message) {
 		this.setState({info: message})
+		console.log("Fra info");
 	}
 
 	error(message) {
 		this.setState({info: "ERROR: " + message})
-		this.bluetoothOff();
+		console.log("Error: " + message);
+		// skru av connection
+		
+		/*cancelDeviceConnection(this.state.device.id).then(() => {
+			console.log("Disconnected");
+		}).catch((error) => {
+			console.log(error)
+		});
+		this.bluetoothOff();*/
+		
 	}
 
 	updateValue(key, value) {
@@ -119,9 +123,23 @@ export default class App extends Component {
 		this.setState({bluetoothSymbol: '#990000'});
 		this.setState({buttonDisable: true});
 		this.setState({connect: "Not connected"});
+		
+		//this.scanAndConnect();
+		this.startup();
 	}
 
 	componentWillMount() {
+		const subscription = this.manager.onStateChange((state) => {
+			if (state === 'PoweredOn') {
+				this.scanAndConnect();
+				subscription.remove();
+			} else {
+				console.log("Bluetooth is powered off");
+			}
+		}, true);
+	}
+
+	startup() {
 		const subscription = this.manager.onStateChange((state) => {
 			if (state === 'PoweredOn') {
 				this.scanAndConnect();
@@ -186,26 +204,45 @@ export default class App extends Component {
 
 	async setupNotifications(device) {
 		const service = this.serviceUUID()
-		const characteristic = this.characteristicNUUID()		
+		const characteristic = this.characteristicNUUID()	
 	
 		device.monitorCharacteristicForService(service, characteristic, (error, characteristic) => {
 			if (error) {
-				this.error(error.message)
+				console.log(error.message)
+				this.manager.isDeviceConnected(this.state.device.id).then((result) => {
+					if(!result) {
+						this.bluetoothOff();
+					}
+				}).catch((error) => {
+					console.log(error);
+				});
 				return
 			}
-			this.updateValue(characteristic.uuid, base64.decode(characteristic.value))
-			console.log("Received: " + base64.decode(characteristic.value))
+			// hvis mindre enn 0 -> print 0
+			let decoded = base64.decode(characteristic.value);
+			let value = decoded.replace(/(\r\n|\n|\r)/gm, "");
+			if(value.includes("-")) {
+				value = "0.00";
+			}
+			this.updateValue(characteristic.uuid, value);
+			console.log("Received: " + decoded)
 		}, transactionID);
+
+		
 	}
 
 	sendData(data) {
 		const service = this.serviceUUID();
 		const characteristic = this.characteristicWUUID();
 
+		console.log("Sent: " + data);
+		if(data !== "-1") {
+			this.setState({data: "Sendt " + data + " g til romstasjonen"});
+		} else {
+			this.setState({data: "Setter rom-stasjon til scale for jorden"});
+		}
+		
 		this.state.device.writeCharacteristicWithResponseForService(service, characteristic, base64.encode(data)).then(ch => {
-			let sent = base64.decode(ch.value);
-			console.log("Sent: " + sent);
-			this.setState({data: sent});
 			this.setAlertVisible(!this.state.alertVisible);	
 		}).catch(error => {
 			console.log(error);
@@ -213,7 +250,7 @@ export default class App extends Component {
 		this.setState({buttonDisable: true});
 		setTimeout(() => {
 			this.setState({buttonDisable: false});
-			this.setAlertVisible(!this.state.alertVisible);			
+			this.setAlertVisible(false);			
 		}, 2000);
 	}
 
@@ -256,30 +293,47 @@ export default class App extends Component {
 	setAlertVisible(visible) {
 		this.setState({alertVisible: visible});
 	}	
+	setChoiceVisible(visible) {
+		this.setState({choiceVisible: visible});
+	}	
+	setPickerVisible(visible) {
+		this.setState({pickerVisible: visible});
+	}	
 
 	pressPlanet(value) {
 		console.log(value);
-		//this.setState({data: value});
-		//this.setAlertVisible(!this.state.alertVisible);	
+		if(value !== "-1") {
+			this.setState({data: "Sendt " + value + " g til romstasjonen"});
+		} else {
+			this.setState({data: "Setter rom-stasjon til scale for jorden"});
+		}
+		
 		if(!this.state.buttonDisable) {
 			this.sendData(value);
 		}
 	}
+	pressStation(value) {
+		this.setPickerVisible(!this.state.pickerVisible);
+	}
+	pressEarth(value) {
+		this.setChoiceVisible(!this.state.choiceVisible);	
+	}
+	setChooseValue(value) {
+		this.setState({chooseValue: value})
+	}
+	setSendValue(value) {
+		this.setState({sendValue: value});
+	}
 
 	render() {
-		let values = [];
-		let max = 4;
-		let min = 0;
 
-		
-		for(let i = min*10; i <= max*10; i++){
-			values.push(
-				<Picker.Item label={(i/10).toFixed(1).toString()} value={(i/10).toFixed(1).toString()} key={(i/10).toFixed(1).toString()} />
-			)
-		}
-		values.push(
-			<Picker.Item label={"-1"} value={"-1"} key={"4.1"} />
-		)
+		/*this.manager.isDeviceConnected(this.state.device.id).then((result) => {
+			if(!result) {
+				bluetoothOff();
+			}
+		}).catch((error) => {
+			console.log(error);
+		});*/
 		
 		//https://www.flaticon.com/free-icon/information_906794#term=question%20mark&page=1&position=2
 		//https://www.flaticon.com/free-icon/cancel_126497#term=cross&page=1&position=3
@@ -328,6 +382,7 @@ export default class App extends Component {
 										<TouchableHighlight
 											onPress={() => {
 												this.setModalVisible(!this.state.modalVisible);
+												//this.setupNotifications(this.state.device);
 											}}>
 											<Image 
 												style={styles.iconWhite}
@@ -339,15 +394,14 @@ export default class App extends Component {
 										<Text style={styles.textMedium}>Hvordan bruke appen</Text>
 												</View>
 										<Text style={[styles.textSmall]}>
-											Trykk på en planet for å velge planetens gravitasjonskraft (g). 
-											På Jorden er det mulig å velge g i scale..
-											Du kan velge bestemt kraft (mellom 0.1 og 4.0) ved å trykke på romstasjonen helt til høyre.
+											Trykk på en planet for å velge planetens tyngdeakselerasjon (g). 
+											På Jorden er det mulig å velge g i skala. Modellen er ikke i riktig skala, i virkeligheten ville modellen ville vært 50 ganger større og rotert mye saktere. Derfor har vi lagt til mulighet for å se rotasjonen som den ville vært i verdensrommet. 
+											Du kan velge bestemt tyngdeakselerasjon (mellom 0.1 og 4.0) ved å trykke på romstasjonen helt til høyre.
 										</Text>
 										<Text style={styles.textMedium}></Text>
 										<Text style={styles.textMedium}>Space Bungalow og tyngdekraft</Text>
 										<Text style={[styles.textSmall]}>
-										Tortor posuere ac ut consequat semper viverra nam libero justo. Tellus id interdum velit laoreet id donec ultrices. Fermentum leo vel orci porta non pulvinar. Ac orci phasellus egestas tellus rutrum tellus. Consequat ac felis donec et odio pellentesque. Semper quis lectus nulla at volutpat diam ut venenatis. Nunc non blandit massa enim nec dui nunc mattis enim. Congue mauris rhoncus aenean vel. Faucibus turpis in eu mi bibendum neque egestas congue quisque. At quis risus sed vulputate odio ut enim blandit. Libero volutpat sed cras ornare arcu dui vivamus. Porta nibh venenatis cras sed felis eget velit aliquet sagittis.
-							
+											Tyngdeakselerasjon 
 										</Text> 
 										<Text style={styles.textMedium}></Text>
 										<Text style={styles.textMedium}>Bibliotek og bilder</Text>
@@ -394,7 +448,7 @@ export default class App extends Component {
 									alignItems: 'center',flex: 1,
 									flexDirection: 'column',
 									marginLeft: windowSize.width*1/40}}>
-										<Text style={styles.textMedium2}>Sendt {this.state.data} g til romstasjonen</Text>
+										<Text style={styles.textMedium2}>{this.state.data}</Text>
 										</View>
 									</View>
 								</TouchableWithoutFeedback>
@@ -403,7 +457,154 @@ export default class App extends Component {
 						</ScrollView>
 					</TouchableOpacity>   
 				</Modal>
-				
+				<Modal
+					animationType="fade"
+					transparent={true}
+					visible={this.state.choiceVisible}>
+					<TouchableOpacity 
+						style={styles.modalContainer} 
+						activeOpacity={1} 
+						onPressOut={() => {this.setChoiceVisible(false)}}
+						>
+						<ScrollView 
+							directionalLockEnabled={true} 
+							contentContainerStyle={styles.scrollModal}>
+						
+							<View style={{
+								marginTop: windowSize.height*6/16,
+								flex: 1,
+								flexDirection: 'column',
+								justifyContent: 'center',
+								alignItems: 'center'}}>
+								<TouchableWithoutFeedback>
+									<View style={{
+										backgroundColor: '#000000',
+										width: windowSize.width*3/10,
+										height: windowSize.height*5/40,
+										borderRadius: 18,
+										opacity: 0.8,
+									}}><View style={{margin: windowSize.width*1/80, justifyContent: 'center',
+									alignItems: 'center',flex: 1,
+									flexDirection: 'column'}}>
+										<Text style={styles.textMedium2}>Skalert? </Text>
+										<View style={{justifyContent: 'center',
+									alignItems: 'center',flex: 1,
+									flexDirection: 'row'}}>
+											<View style={{margin: windowSize.width*1/160}}>
+											<Button
+											onPress={() => {
+												this.pressPlanet("-1");
+												this.setChoiceVisible(false)
+											}}
+											title="Ja"
+											color="#214682"
+											/></View>
+											<View style={{margin: windowSize.width*1/160}}>
+											<Button
+											onPress={() => {
+												this.pressPlanet("1");
+												this.setChoiceVisible(false)
+											}}
+											title="Nei"
+											color="#214682"
+											/>
+											</View>
+											</View>
+										</View>
+									</View>
+								</TouchableWithoutFeedback>
+							</View>
+						
+						</ScrollView>
+					</TouchableOpacity>   
+				</Modal>
+				<Modal
+					animationType="slide"
+					transparent={true}
+					visible={this.state.pickerVisible}>
+					<TouchableOpacity 
+						style={styles.modalContainer} 
+						activeOpacity={1} 
+						onPressOut={() => {this.setPickerVisible(false)}}>
+
+						<ScrollView 
+							directionalLockEnabled={true} 
+							contentContainerStyle={styles.scrollModal}>
+						
+							<View style={{
+								marginTop: windowSize.height*1/20, // windowSize.width*1/8,
+								flex: 1,
+								flexDirection: 'column',
+								justifyContent: 'center',
+								alignItems: 'center'}}>
+								<TouchableWithoutFeedback>
+									<View style={{
+										backgroundColor: '#000000',
+										width: windowSize.width*1/2, //4/5
+										height: windowSize.height*9/10,
+										borderRadius: 18,
+										//elevation: 2,
+										opacity: 0.9,
+										//marginLeft: windowSize.width/20,
+										//shadowColor: 'black', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.16, shadowRadius: 16
+									}}>
+									<View style={{	margin: windowSize.width * 1/15,  /*justifyContent: 'center',*/
+									alignItems: 'center',flex: 1,
+									flexDirection: 'row'}}>
+									<SliderVertical 
+										step={0.1}
+										maximumValue={4}
+										//minimumValue={0}
+										//thumbTintColor='blue'
+										//style={{thumbTintColor='blue'}}
+										thumbTouchSize={{width: 60, height: 60}}
+										//thumbImage={require('romteknologiapp/images/earth.png')}
+										//thumbStyle={styles.thumb}
+										ref="slider"
+										value={this.state.chooseValue}
+										minimumTrackTintColor='transparent' //'#bababa'
+										maximumTrackTintColor='white'
+										//maximumTrackTintColor='transparent'  
+										//minimumTrackTintColor='transparent'
+										style={styles.sliderVertical}
+										thumbTintColor='#FFFFFF'
+										orientation='vertical'
+										onValueChange={(value) => {
+											this.setChooseValue(value);
+											this.setSendValue((4-value).toFixed(1));
+											// husk å tostring før sending
+											//console.log(value)
+										}}>
+									</SliderVertical>
+									<View style={{marginRight: windowSize.width * 1/20, marginLeft: windowSize.width * 1/20}}>
+									<Text style={[styles.number]}>{this.state.sendValue}</Text>
+
+									</View>
+									<View style={{position: 'absolute', right: 0}}>
+
+									<Button
+											onPress={() => {
+												this.sendData(this.state.sendValue);
+												this.setPickerVisible(false);
+											}}
+											title="Send"
+											color="#214682"
+											/>
+									</View>
+									
+									</View>
+
+
+	
+									</View>
+								</TouchableWithoutFeedback>
+							</View>
+						
+						</ScrollView>
+					</TouchableOpacity>   
+					
+				</Modal>
+
 				<View style={styles.topContainer}>
 					<Image 
 						style={[styles.bluetooth, {tintColor: this.state.bluetoothSymbol}]}
@@ -416,7 +617,7 @@ export default class App extends Component {
 					<TouchableOpacity
 						onPress={() => {
 							this.setModalVisible(!this.state.modalVisible);
-							this.manager.cancelTransaction(transactionID);
+							//this.manager.cancelTransaction(transactionID);
 							}}>
 						<Image 
 							style={styles.iconWhite}
@@ -450,7 +651,7 @@ export default class App extends Component {
 							<PlanetView planet="moon" pressPlanet={this.pressPlanet} />
 						</View>
 						<View key="4">
-							<PlanetView planet="earth" pressPlanet={this.pressPlanet} />
+							<PlanetView planet="earth" pressPlanet={this.pressEarth} />
 						</View>
 						<View key="5">
 							<PlanetView planet="mars" pressPlanet={this.pressPlanet} />
@@ -468,7 +669,7 @@ export default class App extends Component {
 							<PlanetView planet="neptune" pressPlanet={this.pressPlanet} />
 						</View>
 						<View key="10">
-							<PlanetView planet="spaceStation" pressPlanet={this.pressPlanet} />
+							<PlanetView planet="spaceStation" pressPlanet={this.pressStation} />
 						</View>
 					</ViewPagerAndroid>
 
@@ -524,7 +725,7 @@ export default class App extends Component {
 					</Slider>
 					<View style={{/*flexDirection: 'row',*/ alignItems: 'center', justifyContent: 'center', //borderColor: 'black', borderRadius: 4,
     /*borderWidth: 0.5,*/}}>
-						<Text style={styles.textLarge}>Gravitasjonskraft på romstasjonen: </Text>
+						<Text style={styles.textLarge}>Tyngdeakselerasjon på romstasjonen: </Text>
 						<Text style={styles.textLarge}>
 							{(this.state.values[this.characteristicNUUID()] || "0") + " g"}
 						</Text>
@@ -625,6 +826,10 @@ const styles = StyleSheet.create({
 		marginBottom: windowSize.height * 1/60,
 		marginTop: windowSize.height * 1/120,
 	},
+	number: {
+		...textOrbitron,
+		fontSize: windowSize.width * 1/14,
+	},
 	titleContainer: {
 		justifyContent: 'center',
 		alignItems: 'center',
@@ -640,6 +845,11 @@ const styles = StyleSheet.create({
 	slider: {
 		//color: '#6addaf'
 		height: 30
+	},
+	sliderVertical: {
+		//color: '#6addaf'
+		height: windowSize.height * 7/10,
+		
 	},
 	input: {
 		backgroundColor: '#FFFFFF'
