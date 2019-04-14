@@ -162,14 +162,16 @@ const styles = StyleSheet.create({
     },
     planetText: {
 		textAlign: 'center',
-		fontSize: windowSize.width * 1/20,
+        //fontSize: windowSize.width * 1/20,
+        fontSize: (windowSize.height/windowSize.width > 1.5) ? windowSize.width * 1/15 : windowSize.width * 1/20,
 		color: '#FFFFFF',
         marginBottom: windowSize.width * 1/40,
         fontFamily: 'Orbitron-Regular',
     },
     infoText: {
 		textAlign: 'center',
-		fontSize: windowSize.width * 1/30, 
+        //fontSize: windowSize.width * 1/30, 
+        fontSize: (windowSize.height/windowSize.width > 1.5) ? windowSize.width * 1/20 : windowSize.width * 1/30,
 		color: '#FFFFFF',
         marginBottom: 5,
         marginTop: windowSize.width * 1/40,

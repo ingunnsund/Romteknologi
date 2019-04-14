@@ -13,7 +13,6 @@ import {
   Button,
   Image,
   StatusBar,
-  Picker,
   Modal,
 } from 'react-native';
 import { BleManager } from 'react-native-ble-plx';
@@ -22,6 +21,7 @@ import Arrow from './components/Arrow';
 import base64 from 'react-native-base64';
 import Slider from '@react-native-community/slider';
 import {Slider as SliderVertical} from 'react-native-elements';
+import {Button as ButtonStop} from 'react-native-elements';
 import ViewPagerAndroid from '@react-native-community/viewpager';
 
 const windowSize = Dimensions.get('window');
@@ -58,7 +58,7 @@ export default class App extends Component {
 			page: 1,
 			sliderValue: initialPlanet,
 			buttonDisable: true,
-			connect: 'Not connected',
+			connect: 'Ikke tilkoblet',
 			modalVisible: false,
 			alertVisible: false,
 			choiceVisible: false,
@@ -137,6 +137,7 @@ export default class App extends Component {
 				console.log("Bluetooth is powered off");
 			}
 		}, true);
+
 	}
 
 	startup() {
@@ -156,7 +157,7 @@ export default class App extends Component {
 				if (result) {
 					console.log("Permission is OK");
 				} else {
-					PermissionsAndroid.requestPermission(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION).then((result) => {
+					PermissionsAndroid.request(PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION).then((result) => {
 						if (result) {
 							console.log("User accept");
 						} else {
@@ -239,10 +240,10 @@ export default class App extends Component {
 		if(data !== "-1") {
 			this.setState({data: "Sendt " + data + " g til romstasjonen"});
 		} else {
-			this.setState({data: "Setter rom-stasjon til scale for jorden"});
+			this.setState({data: "Setter romstasjonen skalert for jorden"});
 		}
 		
-		this.state.device.writeCharacteristicWithResponseForService(service, characteristic, base64.encode(data)).then(ch => {
+		this.state.device.writeCharacteristicWithResponseForService(service, characteristic, base64.encode(data)).then(() => {
 			this.setAlertVisible(!this.state.alertVisible);	
 		}).catch(error => {
 			console.log(error);
@@ -326,14 +327,6 @@ export default class App extends Component {
 	}
 
 	render() {
-
-		/*this.manager.isDeviceConnected(this.state.device.id).then((result) => {
-			if(!result) {
-				bluetoothOff();
-			}
-		}).catch((error) => {
-			console.log(error);
-		});*/
 		
 		//https://www.flaticon.com/free-icon/information_906794#term=question%20mark&page=1&position=2
 		//https://www.flaticon.com/free-icon/cancel_126497#term=cross&page=1&position=3
@@ -368,10 +361,7 @@ export default class App extends Component {
 										width: windowSize.width*9/10, //4/5
 										height: windowSize.height*9/10,
 										borderRadius: 18,
-										//elevation: 2,
 										opacity: 0.9,
-										//marginLeft: windowSize.width/20,
-										//shadowColor: 'black', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.16, shadowRadius: 16
 									}}>
 										<View style={{
 										
@@ -394,9 +384,13 @@ export default class App extends Component {
 										<Text style={styles.textMedium}>Hvordan bruke appen</Text>
 												</View>
 										<Text style={[styles.textSmall]}>
-											Trykk på en planet for å velge planetens tyngdeakselerasjon (g). 
-											På Jorden er det mulig å velge g i skala. Modellen er ikke i riktig skala, i virkeligheten ville modellen ville vært 50 ganger større og rotert mye saktere. Derfor har vi lagt til mulighet for å se rotasjonen som den ville vært i verdensrommet. 
-											Du kan velge bestemt tyngdeakselerasjon (mellom 0.1 og 4.0) ved å trykke på romstasjonen helt til høyre.
+										Space Bungalow-modellen er ikke i riktig skala, i virkeligheten ville modellen ville vært 50 ganger større og rotert saktere. Det er mulig å velge tyngdeakselerasjon i skala for jorden for å se rotasjonen som den ville vært i verdensrommet. {"\n\n"}
+
+										Velg tyngdeakselerasjon (g) på en av disse metodene: {"\n"}
+										- Velg bestemt tyngdeakselerasjon ved å trykke på romstasjonen helt til høyre. {"\n"}
+										- Trykk på en planet for å velge planetens tyngdeakselerasjon. For jorden kan akselerasjon for den skalerte modellen velges. {"\n\n"}
+
+										Modellen kan stoppes ved å trykke på "Stopp"-knappen. 
 										</Text>
 										<Text style={styles.textMedium}></Text>
 										<Text style={styles.textMedium}>Space Bungalow og tyngdekraft</Text>
@@ -548,54 +542,58 @@ export default class App extends Component {
 										//marginLeft: windowSize.width/20,
 										//shadowColor: 'black', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.16, shadowRadius: 16
 									}}>
-									<View style={{	margin: windowSize.width * 1/15,  /*justifyContent: 'center',*/
-									alignItems: 'center',flex: 1,
-									flexDirection: 'row'}}>
-									<SliderVertical 
-										step={0.1}
-										maximumValue={4}
-										//minimumValue={0}
-										//thumbTintColor='blue'
-										//style={{thumbTintColor='blue'}}
-										thumbTouchSize={{width: 60, height: 60}}
-										//thumbImage={require('romteknologiapp/images/earth.png')}
-										//thumbStyle={styles.thumb}
-										ref="slider"
-										value={this.state.chooseValue}
-										minimumTrackTintColor='transparent' //'#bababa'
-										maximumTrackTintColor='white'
-										//maximumTrackTintColor='transparent'  
-										//minimumTrackTintColor='transparent'
-										style={styles.sliderVertical}
-										thumbTintColor='#FFFFFF'
-										orientation='vertical'
-										onValueChange={(value) => {
-											this.setChooseValue(value);
-											this.setSendValue((4-value).toFixed(1));
-											// husk å tostring før sending
-											//console.log(value)
-										}}>
-									</SliderVertical>
-									<View style={{marginRight: windowSize.width * 1/20, marginLeft: windowSize.width * 1/20}}>
-									<Text style={[styles.number]}>{this.state.sendValue}</Text>
+										<View style={{	margin: windowSize.width * 1/15,  /*justifyContent: 'center',*/
+											alignItems: 'center',flex: 1,
+											flexDirection: 'row'}}
+										>
+											<SliderVertical 
+												step={0.1}
+												maximumValue={4}
+												//minimumValue={0}
+												//thumbTintColor='blue'
+												//style={{thumbTintColor='blue'}}
+												thumbTouchSize={{width: 60, height: 60}}
+												//thumbImage={require('romteknologiapp/images/earth.png')}
+												//thumbStyle={styles.thumb}
+												ref="slider"
+												value={this.state.chooseValue}
+												minimumTrackTintColor='transparent' //'#bababa'
+												maximumTrackTintColor='white'
+												//maximumTrackTintColor='transparent'  
+												//minimumTrackTintColor='transparent'
+												style={styles.sliderVertical}
+												thumbTintColor='#FFFFFF'
+												orientation='vertical'
+												onValueChange={(value) => {
+													this.setChooseValue(value);
+													this.setSendValue((4-value).toFixed(1));
+													// husk å tostring før sending
+													//console.log(value)
+												}}>
+											</SliderVertical>
+											<View style={{	  /*justifyContent: 'center',*/
+											alignItems: 'center',flex: 1
+											//right: 0
+											}}>
+												<View style={{marginRight: windowSize.width * 1/20, marginLeft: windowSize.width * 1/20,
+												marginBottom: windowSize.height * 1/30}}>
+													<Text style={[styles.number]}>{this.state.sendValue}</Text>
 
-									</View>
-									<View style={{position: 'absolute', right: 0}}>
-
-									<Button
-											onPress={() => {
-												this.sendData(this.state.sendValue);
-												this.setPickerVisible(false);
-											}}
-											title="Send"
-											color="#214682"
-											/>
-									</View>
-									
-									</View>
-
-
-	
+												</View>
+												<View style={styles.sliderButton}>
+													<Button
+															onPress={() => {
+																if(!this.state.buttonDisable) {
+																	this.sendData(this.state.sendValue);
+																	this.setPickerVisible(false);
+																}
+															}}
+															title="Send"
+															color="#214682"
+															/>
+												</View>
+											</View>
+										</View>	
 									</View>
 								</TouchableWithoutFeedback>
 							</View>
@@ -727,8 +725,19 @@ export default class App extends Component {
     /*borderWidth: 0.5,*/}}>
 						<Text style={styles.textLarge}>Tyngdeakselerasjon på romstasjonen: </Text>
 						<Text style={styles.textLarge}>
-							{(this.state.values[this.characteristicNUUID()] || "0") + " g"}
+							{(this.state.values[this.characteristicNUUID()] || "0.00") + " g"}
 						</Text>
+						<ButtonStop
+							title="Stopp"
+							type="solid"
+							buttonStyle={{backgroundColor: "white", marginTop: windowSize.height * 1/50}}
+							titleStyle={{color: '#122544'}}
+							onPress={() => {
+								if(!this.state.buttonDisable) {
+									this.sendData('0');
+								}
+							}}
+						/>
 					</View>
 					
 					
@@ -749,7 +758,7 @@ const textOrbitron = {
 	fontFamily: 'Orbitron-Regular',
 };
 
-const iconSize = windowSize.width * 1/20;
+const iconSize = windowSize.height * 1/22;
 
 const styles = StyleSheet.create({
 	container: {
@@ -760,7 +769,9 @@ const styles = StyleSheet.create({
 		flex: 0,
 		justifyContent: 'center',
 		alignItems: 'center',
-		height: windowSize.width * 8/10,
+		//height: windowSize.width * 8/10,
+		marginTop: (windowSize.height/windowSize.width > 1.5) ? windowSize.height * 1/40 : 0,
+		height: (windowSize.height/windowSize.width > 1.5) ? windowSize.height * 9/20 : windowSize.height * 6/10,
 		//backgroundColor: '#F5FCFF',
 	},
 	modalContainer: {
@@ -805,16 +816,19 @@ const styles = StyleSheet.create({
 	},
 	textSmall: {
 		...textNormal,
-		fontSize: windowSize.width * 1/40,
+		fontSize: (windowSize.height/windowSize.width > 1.5) ? windowSize.width * 1/30 : windowSize.width * 1/40,
 	},
 	textMedium: {
 		...textOrbitron,
-		fontSize: windowSize.width * 1/30,
+		//fontSize: windowSize.width * 1/30,
+		fontSize: (windowSize.height/windowSize.width > 1.5) ? windowSize.width * 1/20 : windowSize.width * 1/30,
 		marginBottom: windowSize.width * 1/150,
 	},
+
 	textMedium2: {
 		...textNormal,
-		fontSize: windowSize.width * 1/30,
+		//fontSize: windowSize.width * 1/30,
+		fontSize: (windowSize.height/windowSize.width > 1.5) ? windowSize.width * 1/20 : windowSize.width * 1/30,
 	},
 	textLarge: {
 		...textNormal,
