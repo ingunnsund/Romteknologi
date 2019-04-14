@@ -5,13 +5,11 @@ import {
     View,
     Dimensions,
     Image,
-    TouchableOpacity,
     TouchableWithoutFeedback,
   } from 'react-native';
 import RadialGradient from 'react-native-radial-gradient';
 
 const windowSize = Dimensions.get('window');
-let tall = 0;
 
 const planets = { // https://pngtree.com/freepng/planet-planet_1330808.html
     sun: {
@@ -130,7 +128,6 @@ export default class PlanetView extends Component {
 
                             }}
                             onPress={() => {
-                                tall++;
                                 this.props.pressPlanet(gravity);
                             }}
                             onPressOut={() => {

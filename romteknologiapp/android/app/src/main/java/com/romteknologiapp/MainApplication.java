@@ -8,7 +8,6 @@ import com.reactnativecommunity.viewpager.RNCViewPagerPackage;
 import com.reactnativecommunity.slider.ReactSliderPackage;
 import com.surajit.rnrg.RNRadialGradientPackage;
 import com.polidea.reactnativeble.BlePackage;
-import it.innove.BleManagerPackage;
 import com.facebook.react.ReactNativeHost;
 import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
@@ -33,8 +32,7 @@ public class MainApplication extends Application implements ReactApplication {
             new RNCViewPagerPackage(),
             new ReactSliderPackage(),
             new RNRadialGradientPackage(),
-            new BlePackage(),
-            new BleManagerPackage()
+            new BlePackage()
       );
     }
 

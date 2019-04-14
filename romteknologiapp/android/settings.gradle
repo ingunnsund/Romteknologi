@@ -9,7 +9,5 @@ include ':react-native-radial-gradient'
 project(':react-native-radial-gradient').projectDir = new File(rootProject.projectDir, '..\\node_modules\\react-native-radial-gradient\\android')
 include ':react-native-ble-plx'
 project(':react-native-ble-plx').projectDir = new File(rootProject.projectDir, '..\\node_modules\\react-native-ble-plx\\android')
-include ':react-native-ble-manager'
-project(':react-native-ble-manager').projectDir = new File(rootProject.projectDir, '..\\node_modules\\react-native-ble-manager\\android')
 
 include ':app'
