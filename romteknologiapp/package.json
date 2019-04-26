@@ -7,9 +7,16 @@
     "test": "jest"
   },
   "dependencies": {
+    "@react-native-community/slider": "^1.0.4",
+    "@react-native-community/viewpager": "^1.1.5",
     "react": "16.6.3",
-    "react-native": "0.58.5",
-    "react-native-ble-manager": "^6.6.2"
+    "react-native": "^0.59.3",
+    "react-native-base64": "0.0.2",
+    "react-native-ble-plx": "^1.0.3",
+    "react-native-elements": "^1.1.0",
+    "react-native-radial-gradient": "^1.0.5",
+    "react-native-vector-icons": "^6.4.2",
+    "rn-vertical-slider": "^1.0.4"
   },
   "devDependencies": {
     "babel-core": "7.0.0-bridge.0",
@@ -20,5 +27,11 @@
   },
   "jest": {
     "preset": "react-native"
+  },
+  "rnpm": {
+    "assets": [
+      "fonts/orbitron",
+      "fonts/open-sans"
+    ]
   }
 }
