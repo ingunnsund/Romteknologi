@@ -4,6 +4,6 @@ Kildekode til elektronikk og mobilapplikasjon lagd for Eksperter i Team emnet [T
 ![alt text](https://github.com/ingunnsund/Romteknologi/blob/master/Bigelow.JPG)
 
 ## Last ned appen
-Appen kan nedlastes med Android-telefoner:
+Appen kan nedlastes med Android-telefoner [her](https://github.com/ingunnsund/Romteknologi/blob/master/app-release.apk) eller med QR-kode:
 
 ![alt text](https://github.com/ingunnsund/Romteknologi/blob/master/download-app.png)
