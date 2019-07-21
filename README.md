@@ -7,8 +7,10 @@ Kildekode til elektronikk og mobilapplikasjon lagd for Eksperter i Team emnet [T
 ## Mobilapplikasjonen
 Skjermbilder fra applikasjonen:
 
-<img src="https://github.com/ingunnsund/Romteknologi/blob/master/bilder/app-module.png" width="400">
-<img src="https://github.com/ingunnsund/Romteknologi/blob/master/bilder/app-saturn-connected.png" width="400">
+<div style="display: inline-block;">
+  <img src="https://github.com/ingunnsund/Romteknologi/blob/master/bilder/app-module.png" width="410" hspace="5"> 
+  <img src="https://github.com/ingunnsund/Romteknologi/blob/master/bilder/app-saturn-connected.png" width="410" hspace="5">
+</div>
 
 
 ## Last ned mobilapplikasjonen
